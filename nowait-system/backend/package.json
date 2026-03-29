@@ -1,19 +1,31 @@
 {
-  "name": "backend",
+  "name": "nowait-backend",
   "version": "1.0.0",
-  "main": "index.js",
+  "description": "NoWait smart queue and booking system backend",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon server.js",
+    "start": "node server.js"
   },
-  "keywords": [],
+  "keywords": [
+    "queue",
+    "booking",
+    "socket.io",
+    "mongodb",
+    "express"
+  ],
   "author": "",
   "license": "ISC",
-  "description": "",
   "dependencies": {
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
     "mongoose": "^9.3.3",
     "socket.io": "^4.8.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
   }
 }

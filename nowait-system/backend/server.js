@@ -1,59 +1,53 @@
-const express = require("express");
-const http = require("http");
+require("dotenv").config();
+
 const cors = require("cors");
-const { Server } = require("socket.io");
+const express = require("express");
+const helmet = require("helmet");
+const http = require("http");
+
+const connectDB = require("./config/db");
+const { errorHandler, notFoundHandler } = require("./middleware/errorHandler");
+const authRoutes = require("./routes/authRoutes");
+const queueRoutes = require("./routes/queueRoutes");
+const { initializeSocket } = require("./sockets/queueSocket");
+
+const PORT = Number(process.env.PORT || 5000);
+const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:5173";
 
 const app = express();
-app.use(cors());
-app.use(express.json());
-
 const server = http.createServer(app);
 
-const io = new Server(server, {
-  cors: {
-    origin: "*",
-  },
+app.use(
+  cors({
+    origin: CLIENT_URL,
+    credentials: true,
+  }),
+);
+app.use(helmet());
+app.use(express.json({ limit: "1mb" }));
+
+app.get("/api/health", (_req, res) => {
+  res.status(200).json({
+    message: "NoWait backend is healthy.",
+    timestamp: new Date().toISOString(),
+  });
 });
 
-// 🧠 Queue State
-let currentToken = 0;
-let servingToken = 0;
+app.use("/api/auth", authRoutes);
+app.use("/api", queueRoutes);
 
-// 🔌 Socket Connection
-io.on("connection", (socket) => {
-  console.log("User connected");
+app.use(notFoundHandler);
+app.use(errorHandler);
 
-  // 🎟️ Generate Token
-  socket.on("getToken", () => {
-    currentToken++;
+initializeSocket(server);
 
-    socket.emit("tokenGenerated", currentToken);
-
-    io.emit("queueUpdate", {
-      currentToken,
-      servingToken,
+connectDB()
+  .then(() => {
+    server.listen(PORT, () => {
+      console.log(`NoWait backend listening on port ${PORT}`);
     });
+  })
+  .catch((error) => {
+    console.error("Failed to connect to MongoDB.", error);
+    process.exit(1);
   });
-
-  // ⏭️ Next Token
-  socket.on("nextToken", () => {
-    if (servingToken < currentToken) {
-      servingToken++;
-
-      io.emit("queueUpdate", {
-        currentToken,
-        servingToken,
-      });
-    }
-  });
-
-  // 🔄 Send initial state
-  socket.emit("queueUpdate", {
-    currentToken,
-    servingToken,
-  });
-});
-
-server.listen(3000, () => {
-  console.log("🚀 Server running on port 3000");
-});

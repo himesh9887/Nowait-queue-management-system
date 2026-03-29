@@ -1,35 +1,68 @@
-import { useEffect, useState } from "react";
-import socket from "../../services/socket";
+import BookingForm from "../../components/BookingForm";
+import HeroBanner from "../../components/HeroBanner";
+import LiveBoard from "../../components/LiveBoard";
+import LoadingScreen from "../../components/LoadingScreen";
+import QueueTable from "../../components/QueueTable";
+import TokenSummary from "../../components/TokenSummary";
+import { useQueue } from "../../context/QueueContext";
 
 export default function UserHome() {
-  const [myToken, setMyToken] = useState(null);
-  const [current, setCurrent] = useState(0);
-  const [serving, setServing] = useState(0);
+  const {
+    booking,
+    bookToken,
+    clearTrackedToken,
+    currentServing,
+    loading,
+    myToken,
+    nextUp,
+    queue,
+    services,
+    socketConnected,
+    stats,
+  } = useQueue();
 
-  const getToken = () => {
-    socket.emit("getToken");
-  };
-
-  useEffect(() => {
-    socket.on("tokenGenerated", (token) => {
-      setMyToken(token);
-    });
-
-    socket.on("queueUpdate", (data) => {
-      setCurrent(data.currentToken);
-      setServing(data.servingToken);
-    });
-  }, []);
+  if (loading) {
+    return <LoadingScreen label="Loading queue experience..." />;
+  }
 
   return (
-    <div>
-      <h1>NoWait - User</h1>
+    <div className="space-y-6">
+      <HeroBanner
+        stats={stats}
+        currentServing={currentServing}
+        socketConnected={socketConnected}
+      />
 
-      <button onClick={getToken}>Get Token</button>
+      <div className="grid gap-6 xl:grid-cols-[0.98fr_1.02fr]">
+        <div className="space-y-6">
+          <BookingForm
+            services={services}
+            onBookToken={bookToken}
+            booking={booking}
+            socketConnected={socketConnected}
+          />
+          <TokenSummary
+            myToken={myToken}
+            currentServing={currentServing}
+            onClear={clearTrackedToken}
+            socketConnected={socketConnected}
+          />
+        </div>
 
-      {myToken && <h2>Your Token: {myToken}</h2>}
-      <h3>Now Serving: {serving}</h3>
-      <h3>Total Tokens: {current}</h3>
+        <div className="space-y-6">
+          <LiveBoard
+            currentServing={currentServing}
+            nextUp={nextUp}
+            stats={stats}
+          />
+          <QueueTable
+            title="Active queue"
+            description="Watch the live token order, current service, and updated waiting time estimate."
+            tokens={queue}
+            emptyMessage="The queue is empty right now. Book the first token to get started."
+          />
+        </div>
+      </div>
     </div>
   );
 }
