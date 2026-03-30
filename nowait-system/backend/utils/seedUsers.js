@@ -28,32 +28,27 @@ function getDefaultUsers() {
 async function seedDefaultUsers() {
   const defaults = getDefaultUsers();
 
-  await Promise.all(
-    defaults.map(async (account) => {
-      const passwordHash = await bcrypt.hash(account.password, 10);
+  await Promise.all(defaults.map(async (account) => {
+    const username = account.username.toLowerCase();
+    const existingUser = await User.findOne({ username });
 
-      await User.findOneAndUpdate(
-        { username: account.username.toLowerCase() },
-        {
-          $set: {
-            displayName: account.displayName,
-            passwordHash,
-            role: account.role,
-            active: true,
-            username: account.username.toLowerCase(),
-          },
-        },
-        {
-          upsert: true,
-          new: true,
-          setDefaultsOnInsert: true,
-        },
-      );
-    }),
-  );
+    if (existingUser) {
+      return existingUser;
+    }
+
+    const passwordHash = await bcrypt.hash(account.password, 10);
+
+    return User.create({
+      username,
+      displayName: account.displayName,
+      passwordHash,
+      role: account.role,
+      active: true,
+    });
+  }));
 
   console.log(
-    `Seeded default user accounts: ${defaults
+    `Ensured default user accounts exist: ${defaults
       .map((account) => `${account.role}:${account.username}`)
       .join(", ")}`,
   );

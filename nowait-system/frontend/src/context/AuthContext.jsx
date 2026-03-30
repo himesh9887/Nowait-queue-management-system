@@ -118,7 +118,7 @@ export function AuthProvider({ children }) {
       user: payload.user,
       remember,
       loading: false,
-    });
+    });  
     return payload;
   }
 

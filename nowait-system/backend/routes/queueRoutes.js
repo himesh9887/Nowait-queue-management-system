@@ -17,7 +17,7 @@ const {
 
 const router = express.Router();
 
-router.post("/book-token", optionalAuth, bookToken);
+router.post("/book-token", authenticate, authorizeRoles("user"), bookToken);
 router.get("/queue", optionalAuth, getQueueStatus);
 router.get("/queue-status", optionalAuth, getQueueStatus);
 router.get("/bookings", authenticate, authorizeRoles("admin"), getBookings);

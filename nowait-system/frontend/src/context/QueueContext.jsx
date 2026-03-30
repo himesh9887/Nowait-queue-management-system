@@ -21,6 +21,23 @@ import {
 } from "../services/queueService";
 
 const QueueContext = createContext(null);
+const NOTIFICATION_SOUND_STORAGE_KEY = "nowait-notification-sound-enabled";
+
+function readNotificationSoundPreference() {
+  if (typeof window === "undefined") {
+    return true;
+  }
+
+  try {
+    const storedValue = window.localStorage.getItem(
+      NOTIFICATION_SOUND_STORAGE_KEY,
+    );
+
+    return storedValue === null ? true : storedValue === "true";
+  } catch {
+    return true;
+  }
+}
 
 function buildEmptyDay(relativeLabel) {
   return {
@@ -208,6 +225,9 @@ export function QueueProvider({ children }) {
   const latestUserTokensRef = useRef([]);
   const notificationTimeoutsRef = useRef(new Map());
   const seenNotificationKeysRef = useRef(new Set());
+  const [notificationSoundEnabled, setNotificationSoundEnabled] = useState(
+    readNotificationSoundPreference,
+  );
   const [selectedDay, setSelectedDay] = useState("today");
   const [state, setState] = useState({
     snapshot: null,
@@ -220,6 +240,21 @@ export function QueueProvider({ children }) {
     socketConnected: false,
     notifications: [],
   });
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(
+        NOTIFICATION_SOUND_STORAGE_KEY,
+        String(notificationSoundEnabled),
+      );
+    } catch {
+      // Ignore storage failures so queue operations keep working.
+    }
+  }, [notificationSoundEnabled]);
 
   const dismissNotification = useCallback((notificationId) => {
     const timeoutId = notificationTimeoutsRef.current.get(notificationId);
@@ -539,6 +574,7 @@ export function QueueProvider({ children }) {
         myToken: snapshot.myToken,
         nextToken: () => runAdminAction("next", nextTokenRequest),
         nextUp: snapshot.nextUp,
+        notificationSoundEnabled,
         notifications: state.notifications,
         queue: snapshot.queue,
         refreshBookings: (day) => refreshBookings(day || selectedDay),
@@ -547,6 +583,7 @@ export function QueueProvider({ children }) {
         resetQueue: () => runAdminAction("reset", resetQueueRequest),
         selectedDay,
         selectedDayInfo: snapshot.selectedDay,
+        setNotificationSoundEnabled,
         setSelectedDay,
         services: snapshot.services,
         skipToken: () => runAdminAction("skip", skipTokenRequest),

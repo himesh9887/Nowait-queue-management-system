@@ -11,6 +11,7 @@ import {
 import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
 import { useAuth } from "../../context/AuthContext";
+import { normalizeUsername } from "../../utils/authValidation";
 
 function getDashboardForRole(role) {
   return role === "admin" ? "/admin-dashboard" : "/user-dashboard";
@@ -73,7 +74,7 @@ export default function Login() {
       setSubmitting(true);
       const response = await login(
         {
-          username: form.username.trim(),
+          username: normalizeUsername(form.username),
           password: form.password,
         },
         {
@@ -122,6 +123,7 @@ export default function Login() {
           onChange={(event) => updateField("username", event.target.value)}
           placeholder="Enter your username"
           autoComplete="username"
+          helper="Sign in with the username you used during account creation."
           error={fieldErrors.username}
         />
 
@@ -134,6 +136,7 @@ export default function Login() {
           onChange={(event) => updateField("password", event.target.value)}
           placeholder="Enter your password"
           autoComplete="current-password"
+          helper="You will be routed to the correct dashboard automatically after sign-in."
           error={fieldErrors.password}
         />
 

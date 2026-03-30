@@ -6,12 +6,16 @@ import {
   AlertCircleIcon,
   CheckCircleIcon,
   LockIcon,
-  ShieldIcon,
   UserIcon,
 } from "../../components/auth/AuthIcons";
 import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
 import { useAuth } from "../../context/AuthContext";
+import {
+  normalizeUsername,
+  validatePassword,
+  validateUsername,
+} from "../../utils/authValidation";
 
 function getDashboardForRole(role) {
   return role === "admin" ? "/admin-dashboard" : "/user-dashboard";
@@ -24,7 +28,6 @@ export default function Register() {
     username: "",
     password: "",
     confirmPassword: "",
-    role: "user",
   });
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -57,24 +60,18 @@ export default function Register() {
     setSuccessMessage("");
 
     const nextErrors = {
-      username: form.username.trim() ? "" : "Username is required.",
-      password: form.password.trim() ? "" : "Password is required.",
+      username: validateUsername(form.username),
+      password: validatePassword(form.password),
       confirmPassword: form.confirmPassword.trim()
         ? form.password === form.confirmPassword
           ? ""
           : "Passwords do not match."
         : "Please confirm your password.",
-      role: form.role ? "" : "Please select a role.",
     };
 
     setFieldErrors(nextErrors);
 
-    if (
-      nextErrors.username ||
-      nextErrors.password ||
-      nextErrors.confirmPassword ||
-      nextErrors.role
-    ) {
+    if (nextErrors.username || nextErrors.password || nextErrors.confirmPassword) {
       setErrorMessage("Please review the highlighted fields before creating your account.");
       return;
     }
@@ -82,9 +79,8 @@ export default function Register() {
     try {
       setSubmitting(true);
       const response = await register({
-        username: form.username.trim(),
+        username: normalizeUsername(form.username),
         password: form.password,
-        role: form.role,
       });
 
       setSuccessMessage(response.message);
@@ -93,7 +89,7 @@ export default function Register() {
       navigate("/login", {
         replace: true,
         state: {
-          username: form.username.trim(),
+          username: normalizeUsername(form.username),
           message: "Account created successfully. Sign in to continue.",
         },
       });
@@ -110,7 +106,7 @@ export default function Register() {
       activeTab="register"
       eyebrow="Create Account"
       title="Join the NoWait platform"
-      description="Create your account to unlock smart booking, live queue tracking, and admin controls with a polished role-based experience."
+      description="Create your user account to unlock smart booking, live queue tracking, invoices, and notifications. Admin workspaces are provisioned separately for security."
     >
       {successMessage ? (
         <div className="auth-banner auth-banner-success">
@@ -134,7 +130,7 @@ export default function Register() {
           onChange={(event) => updateField("username", event.target.value)}
           placeholder="Choose a username"
           autoComplete="username"
-          helper="This will be used to sign in across the platform."
+          helper="Use 3-32 lowercase characters. Numbers, periods, underscores, and hyphens are allowed."
           error={fieldErrors.username}
         />
 
@@ -147,7 +143,7 @@ export default function Register() {
           onChange={(event) => updateField("password", event.target.value)}
           placeholder="Create a password"
           autoComplete="new-password"
-          helper="Use at least 6 characters for a secure account."
+          helper="Use at least 8 characters with at least one letter and one number."
           error={fieldErrors.password}
         />
 
@@ -163,20 +159,8 @@ export default function Register() {
           error={fieldErrors.confirmPassword}
         />
 
-        <Input
-          as="select"
-          label="Role"
-          icon={<ShieldIcon className="h-5 w-5" />}
-          value={form.role}
-          onChange={(event) => updateField("role", event.target.value)}
-          error={fieldErrors.role}
-        >
-          <option value="user">User</option>
-          <option value="admin">Admin</option>
-        </Input>
-
         <Button type="submit" loading={submitting}>
-          {submitting ? "Creating account..." : "Register"}
+          {submitting ? "Creating account..." : "Create user account"}
         </Button>
       </form>
 

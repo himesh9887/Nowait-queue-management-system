@@ -1,5 +1,7 @@
+import { useEffect, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useQueue } from "../context/QueueContext";
+import { playNotificationTone } from "../utils/notificationAudio";
 import { BellIcon } from "./user/UserIcons";
 
 function CloseIcon({ className = "" }) {
@@ -34,7 +36,27 @@ function getToneClassName(type) {
 
 export default function NotificationCenter() {
   const { user } = useAuth();
-  const { dismissNotification, notifications } = useQueue();
+  const lastPlayedNotificationIdRef = useRef(null);
+  const {
+    dismissNotification,
+    notificationSoundEnabled,
+    notifications,
+  } = useQueue();
+
+  useEffect(() => {
+    if (user?.role !== "user" || !notificationSoundEnabled || !notifications.length) {
+      return;
+    }
+
+    const latestNotification = notifications[0];
+
+    if (!latestNotification || latestNotification.id === lastPlayedNotificationIdRef.current) {
+      return;
+    }
+
+    lastPlayedNotificationIdRef.current = latestNotification.id;
+    void playNotificationTone(latestNotification.type);
+  }, [notificationSoundEnabled, notifications, user?.role]);
 
   if (user?.role !== "user" || !notifications.length) {
     return null;

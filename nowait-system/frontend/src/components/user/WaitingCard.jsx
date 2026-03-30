@@ -1,8 +1,19 @@
-import { formatMinutes, formatToken } from "../../utils/formatters";
+import { useEtaCountdown } from "../../hooks/useEtaCountdown";
+import {
+  formatCountdown,
+  formatMinutes,
+  formatToken,
+} from "../../utils/formatters";
 import { TimerIcon } from "./UserIcons";
 
-export default function WaitingCard({ avgServiceTime, currentServing, myToken }) {
+export default function WaitingCard({
+  avgServiceTime,
+  currentServing,
+  generatedAt,
+  myToken,
+}) {
   const servingToken = currentServing?.tokenNumber || 0;
+  const queueHasNotStarted = myToken?.status === "waiting" && !currentServing;
   const tokensAhead =
     myToken?.status === "waiting"
       ? Math.max(myToken.tokensAhead ?? myToken.tokenNumber - servingToken, 0)
@@ -12,6 +23,11 @@ export default function WaitingCard({ avgServiceTime, currentServing, myToken })
       ? myToken.estimatedWaitingTime ??
         Math.max(myToken.tokenNumber - servingToken, 0) * avgServiceTime
       : 0;
+  const { remainingMs } = useEtaCountdown({
+    active: myToken?.status === "waiting" && !queueHasNotStarted,
+    estimatedMinutes: estimatedWait,
+    referenceTime: generatedAt,
+  });
   const progressValue =
     myToken?.status === "waiting"
       ? Math.max(8, Math.min(100, 100 - tokensAhead * 14))
@@ -24,6 +40,33 @@ export default function WaitingCard({ avgServiceTime, currentServing, myToken })
       : myToken?.status === "serving"
         ? "No one is ahead of you right now"
         : "This token is already complete";
+  const etaLabel =
+    myToken?.status === "waiting"
+      ? queueHasNotStarted
+        ? "Queue start pending"
+        : formatMinutes(estimatedWait)
+      : myToken?.status === "serving"
+        ? "Now"
+        : "Done";
+  const countdownLabel =
+    myToken?.status === "waiting"
+      ? queueHasNotStarted
+        ? "Pending"
+        : formatCountdown(remainingMs)
+      : myToken?.status === "serving"
+        ? "00:00"
+        : "--:--";
+  const etaSupportCopy = queueHasNotStarted
+    ? "The desk has not started serving yet. Your ETA will tighten as soon as the first token is called."
+    : `Based on token ${formatToken(currentServing?.tokenNumber)} being served and an average of ${avgServiceTime} minutes per token.`;
+  const countdownSupportCopy =
+    myToken?.status === "waiting"
+      ? queueHasNotStarted
+        ? "Countdown will begin automatically the moment service starts."
+        : "Updates every second between queue events so your ETA feels truly live."
+      : myToken?.status === "serving"
+        ? "Proceed to the service desk now."
+        : "This queue session has already completed.";
 
   return (
     <section className="user-dashboard-card">
@@ -56,16 +99,36 @@ export default function WaitingCard({ avgServiceTime, currentServing, myToken })
         <div className="user-wait-highlight user-wait-highlight-accent">
           <div className="user-dashboard-label">Estimated waiting time</div>
           <div className="mt-3 text-4xl font-semibold tracking-tight text-white">
-            {myToken?.status === "waiting"
-              ? formatMinutes(estimatedWait)
-              : myToken?.status === "serving"
-                ? "Now"
-                : "Done"}
+            {etaLabel}
           </div>
           <div className="mt-2 text-sm leading-7 text-slate-300">
-            Based on token {formatToken(currentServing?.tokenNumber)} being served and
-            an average of {avgServiceTime} minutes per token.
+            {etaSupportCopy}
           </div>
+        </div>
+      </div>
+
+      <div className="mt-5 rounded-[1.5rem] border border-cyan-300/12 bg-[linear-gradient(135deg,rgba(6,13,25,0.92),rgba(14,26,51,0.88),rgba(35,18,74,0.75))] p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="user-dashboard-label text-sky-100/80">Live countdown</div>
+            <div className="mt-3 text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+              {countdownLabel}
+            </div>
+          </div>
+
+          <div className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-xs uppercase tracking-[0.22em] text-slate-300">
+            {myToken?.status === "waiting"
+              ? queueHasNotStarted
+                ? "Awaiting start"
+                : "Updating live"
+              : myToken?.status === "serving"
+                ? "Serving now"
+                : "Completed"}
+          </div>
+        </div>
+
+        <div className="mt-3 text-sm leading-7 text-slate-300">
+          {countdownSupportCopy}
         </div>
       </div>
 
@@ -74,9 +137,11 @@ export default function WaitingCard({ avgServiceTime, currentServing, myToken })
           <span>Queue progress</span>
           <span>
             {myToken?.status === "waiting"
-              ? tokensAhead <= 2
-                ? "Almost there"
-                : "Moving steadily"
+              ? queueHasNotStarted
+                ? "Waiting for service start"
+                : tokensAhead <= 2
+                  ? "Almost there"
+                  : "Moving steadily"
               : myToken?.status === "serving"
                 ? "It is your turn"
                 : "Queue closed"}

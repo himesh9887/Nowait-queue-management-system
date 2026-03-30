@@ -79,6 +79,26 @@ export function BellIcon({ className = "" }) {
   );
 }
 
+export function SpeakerWaveIcon({ className = "" }) {
+  return (
+    <IconBase className={className}>
+      <path d="M11 6.5 7.75 9H5.5v6h2.25L11 17.5v-11Z" />
+      <path d="M14.5 10.25a2.75 2.75 0 0 1 0 3.5" />
+      <path d="M17 8.25a5.75 5.75 0 0 1 0 7.5" />
+    </IconBase>
+  );
+}
+
+export function SpeakerOffIcon({ className = "" }) {
+  return (
+    <IconBase className={className}>
+      <path d="M11 6.5 7.75 9H5.5v6h2.25L11 17.5v-11Z" />
+      <path d="m15.5 9.5 4 4" />
+      <path d="m19.5 9.5-4 4" />
+    </IconBase>
+  );
+}
+
 export function ChartIcon({ className = "" }) {
   return (
     <IconBase className={className}>

@@ -12,8 +12,11 @@ NoWait is a real-time queue platform with separate authenticated workspaces for 
 
 - Landing login screen with separate User Login and Admin Login modes
 - Role-based protected routes for `/user` and `/admin`
-- Book a token by service with an optional time slot
+- Secure self-service registration for `user` accounts, with seeded admin access
+- Book a token automatically for today or tomorrow without manual time input
 - User dashboard with personal token, current serving token, tokens ahead, and ETA
+- Smart in-app notifications with sound support, live countdowns, and ETA updates
+- Installable PWA support with manifest, service worker, and install prompt
 - Estimated waiting time based on average service time
 - Admin dashboard with queue stats, full queue list, and queue controls
 - Display board for public token screens
@@ -86,7 +89,7 @@ nowait-system/
 - User: `user / user123`
 - Admin: `admin / admin123`
 
-These accounts are seeded automatically from [`backend/.env.example`](/c:/Users/hp/Desktop/New%20folder%20(16)/nowait-system/backend/.env.example). You can change them in `backend/.env`.
+These accounts are seeded automatically from [`backend/.env.example`](/c:/Users/hp/Desktop/New%20folder%20(16)/nowait-system/backend/.env.example) the first time they do not exist. You can change them in `backend/.env`.
 
 ## Default Backend Routes
 
@@ -96,6 +99,7 @@ These accounts are seeded automatically from [`backend/.env.example`](/c:/Users/
 - `GET /api/queue`
 - `GET /api/queue-status`
 - `GET /api/bookings`
+- `POST /api/start-serving`
 - `POST /api/next-token`
 - `POST /api/skip-token`
 - `POST /api/reset`

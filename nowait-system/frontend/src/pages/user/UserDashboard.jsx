@@ -251,6 +251,7 @@ export default function UserDashboard() {
         <WaitingCard
           avgServiceTime={stats.avgServiceTime}
           currentServing={currentServing}
+          generatedAt={generatedAt}
           myToken={myToken}
         />
       </div>

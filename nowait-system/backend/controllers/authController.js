@@ -3,8 +3,15 @@ const jwt = require("jsonwebtoken");
 
 const User = require("../models/User");
 
+const USERNAME_PATTERN = /^[a-z0-9](?:[a-z0-9._-]{1,30}[a-z0-9])?$/;
+const MIN_PASSWORD_LENGTH = 8;
+
+function normalizeBodyValue(value) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
 function normalizeUsername(value) {
-  return value?.trim()?.toLowerCase();
+  return normalizeBodyValue(value).toLowerCase();
 }
 
 function toDisplayName(username) {
@@ -43,27 +50,55 @@ function signSessionToken(sessionUser) {
   );
 }
 
+function validateUsername(username) {
+  if (!username) {
+    return "Username is required.";
+  }
+
+  if (username.length < 3 || username.length > 32) {
+    return "Username must be between 3 and 32 characters long.";
+  }
+
+  if (!USERNAME_PATTERN.test(username)) {
+    return "Username can use lowercase letters, numbers, periods, underscores, and hyphens only.";
+  }
+
+  return "";
+}
+
+function validatePassword(password) {
+  if (!password) {
+    return "Password is required.";
+  }
+
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    return `Password must be at least ${MIN_PASSWORD_LENGTH} characters long.`;
+  }
+
+  if (!/[a-z]/i.test(password) || !/\d/.test(password)) {
+    return "Password must include at least one letter and one number.";
+  }
+
+  return "";
+}
+
 async function register(req, res, next) {
   try {
     const username = normalizeUsername(req.body?.username);
-    const password = req.body?.password;
-    const role = req.body?.role;
+    const password = normalizeBodyValue(req.body?.password);
+    const requestedRole = normalizeBodyValue(req.body?.role).toLowerCase();
+    const usernameError = validateUsername(username);
+    const passwordError = validatePassword(password);
 
-    if (!username || !password || !role) {
-      return res.status(400).json({
-        message: "Username, password, and role are required.",
+    if (requestedRole && requestedRole !== "user") {
+      return res.status(403).json({
+        message: "Self-service registration is available for user accounts only.",
       });
     }
 
-    if (!["user", "admin"].includes(role)) {
+    if (usernameError || passwordError) {
       return res.status(400).json({
-        message: "Please select a valid role.",
-      });
-    }
-
-    if (password.length < 6) {
-      return res.status(400).json({
-        message: "Password must be at least 6 characters long.",
+        message: usernameError || passwordError,
       });
     }
 
@@ -81,7 +116,7 @@ async function register(req, res, next) {
     const user = await User.create({
       username,
       displayName: toDisplayName(username),
-      role,
+      role: "user",
       passwordHash,
       active: true,
     });
@@ -98,8 +133,8 @@ async function register(req, res, next) {
 async function login(req, res, next) {
   try {
     const username = normalizeUsername(req.body?.username);
-    const password = req.body?.password;
-    const role = req.body?.role;
+    const password = normalizeBodyValue(req.body?.password);
+    const role = normalizeBodyValue(req.body?.role).toLowerCase();
 
     if (!username || !password) {
       return res.status(400).json({
