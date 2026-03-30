@@ -132,6 +132,14 @@ export function CheckCircleIcon(props) {
   );
 }
 
+export function PlayIcon(props) {
+  return (
+    <Svg {...props}>
+      <path d="m8 6 9 6-9 6V6Z" />
+    </Svg>
+  );
+}
+
 export function SkipIcon(props) {
   return (
     <Svg {...props}>

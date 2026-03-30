@@ -6,6 +6,7 @@ import "@fontsource/space-grotesk/500.css";
 import "@fontsource/space-grotesk/700.css";
 import "./index.css";
 import App from "./App";
+import NotificationCenter from "./components/NotificationCenter";
 import { AuthProvider } from "./context/AuthContext";
 import { QueueProvider } from "./context/QueueContext";
 
@@ -14,6 +15,7 @@ createRoot(document.getElementById("root")).render(
     <AuthProvider>
       <QueueProvider>
         <App />
+        <NotificationCenter />
         <Toaster
           position="top-right"
           toastOptions={{

@@ -1,6 +1,7 @@
 import {
   CheckCircleIcon,
   ClockIcon,
+  PlayIcon,
   QueueIcon,
   ResetIcon,
   SkipIcon,
@@ -43,13 +44,16 @@ export default function ControlPanel({
   nextUp,
   onNext,
   onResetRequest,
+  onStartServing,
   onSkip,
   queueForecast,
   selectedDayInfo,
   socketConnected,
 }) {
-  const hasQueue = Boolean(currentServing || nextUp);
-  const disableActions = Boolean(busyAction) || !hasQueue || !canServeSelectedDay;
+  const canStartServing = Boolean(
+    canServeSelectedDay && !busyAction && !currentServing && nextUp,
+  );
+  const canAdvanceQueue = Boolean(canServeSelectedDay && !busyAction && currentServing);
 
   return (
     <section className="admin-panel admin-fade-up">
@@ -114,11 +118,21 @@ export default function ControlPanel({
         </div>
       ) : null}
 
-      <div className="mt-6 grid gap-3 xl:grid-cols-3">
+      <div className="mt-6 grid gap-3 xl:grid-cols-2">
+        <ActionButton
+          icon={PlayIcon}
+          onClick={onStartServing}
+          disabled={!canStartServing}
+          toneClassName="border-cyan-300/18 bg-cyan-400/[0.1] hover:-translate-y-1 hover:border-cyan-300/24 hover:bg-cyan-400/[0.15]"
+          description="Manually begin service by marking the first waiting token as the active serving token."
+        >
+          {busyAction === "start" ? "Starting service..." : "Start Serving"}
+        </ActionButton>
+
         <ActionButton
           icon={CheckCircleIcon}
           onClick={onNext}
-          disabled={disableActions}
+          disabled={!canAdvanceQueue}
           toneClassName="border-emerald-300/18 bg-emerald-400/[0.1] hover:-translate-y-1 hover:border-emerald-300/24 hover:bg-emerald-400/[0.15]"
           description="Move the current token to completed and begin serving the next waiting token."
         >
@@ -128,7 +142,7 @@ export default function ControlPanel({
         <ActionButton
           icon={SkipIcon}
           onClick={onSkip}
-          disabled={disableActions}
+          disabled={!canAdvanceQueue}
           toneClassName="border-amber-300/18 bg-amber-400/[0.08] hover:-translate-y-1 hover:border-amber-300/24 hover:bg-amber-400/[0.13]"
           description="Mark the active token as skipped, then advance service to the next waiting customer."
         >
@@ -152,16 +166,16 @@ export default function ControlPanel({
         </div>
         <div className="mt-3 grid gap-3 text-sm leading-6 text-slate-300 sm:grid-cols-3">
           <div className="rounded-[1.35rem] border border-white/8 bg-white/[0.03] p-4">
+            Start Serving manually begins the queue and guarantees only one serving
+            token at a time.
+          </div>
+          <div className="rounded-[1.35rem] border border-white/8 bg-white/[0.03] p-4">
             Next token completes the current call before promoting the next waiting
             entry to serving.
           </div>
           <div className="rounded-[1.35rem] border border-white/8 bg-white/[0.03] p-4">
-            Skip token marks the active entry as skipped and immediately advances
-            the queue.
-          </div>
-          <div className="rounded-[1.35rem] border border-white/8 bg-white/[0.03] p-4">
-            Reset only clears the selected day queue. Today and tomorrow remain
-            separated.
+            Skip and reset keep the queue sequential, preserve day separation, and
+            never create new tokens from admin.
           </div>
         </div>
       </div>

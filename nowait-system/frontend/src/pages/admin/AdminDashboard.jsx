@@ -71,6 +71,7 @@ export default function AdminDashboard() {
     setSelectedDay,
     skipToken,
     socketConnected,
+    startServing,
     stats,
   } = useQueue();
   const [search, setSearch] = useState("");
@@ -128,9 +129,15 @@ export default function AdminDashboard() {
           detail: `${currentServing.bookedBy || "Current customer"} is active right now.`,
           toneClassName: "border-violet-300/18 bg-violet-400/[0.08] text-violet-50",
         }
+      : nextUp
+        ? {
+            title: "Queue is waiting to start",
+            detail: `Use Start Serving to begin with token ${formatToken(nextUp.tokenNumber)}.`,
+            toneClassName: "border-cyan-300/18 bg-cyan-400/[0.08] text-cyan-50",
+          }
       : {
           title: "Queue is ready for the next call",
-          detail: "No token is currently marked as serving.",
+          detail: "No token is currently marked as serving and no waiting entries are available.",
           toneClassName: "border-white/10 bg-white/[0.04] text-slate-100",
         },
   ].filter(Boolean);
@@ -560,6 +567,7 @@ export default function AdminDashboard() {
                 nextUp={nextUp}
                 onNext={nextToken}
                 onResetRequest={() => setShowResetDialog(true)}
+                onStartServing={startServing}
                 onSkip={skipToken}
                 queueForecast={stats.queueForecast}
                 selectedDayInfo={selectedDayInfo}

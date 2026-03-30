@@ -3,11 +3,13 @@ import socket from "../services/socket";
 
 export function useQueueSocket({
   onConnectionChange,
+  onNotifyNextUser,
   onQueueUpdated,
   onTokenBooked,
   onTokenCalled,
 }) {
   const handleConnectionChange = useEffectEvent(onConnectionChange || (() => {}));
+  const handleNotifyNextUser = useEffectEvent(onNotifyNextUser || (() => {}));
   const handleQueueUpdated = useEffectEvent(onQueueUpdated || (() => {}));
   const handleTokenBooked = useEffectEvent(onTokenBooked || (() => {}));
   const handleTokenCalled = useEffectEvent(onTokenCalled || (() => {}));
@@ -34,6 +36,10 @@ export function useQueueSocket({
       handleTokenCalled(token);
     }
 
+    function onNotify(signal) {
+      handleNotifyNextUser(signal);
+    }
+
     socket.connect();
     handleConnectionChange(socket.connected);
     if (socket.connected) {
@@ -46,6 +52,7 @@ export function useQueueSocket({
     socket.on("tokenBooked", onBooked);
     socket.on("tokenGenerated", onBooked);
     socket.on("tokenCalled", onCalled);
+    socket.on("notifyNextUser", onNotify);
 
     return () => {
       socket.off("connect", onConnect);
@@ -55,6 +62,7 @@ export function useQueueSocket({
       socket.off("tokenBooked", onBooked);
       socket.off("tokenGenerated", onBooked);
       socket.off("tokenCalled", onCalled);
+      socket.off("notifyNextUser", onNotify);
     };
   }, []);
 }

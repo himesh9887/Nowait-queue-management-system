@@ -4,6 +4,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import toast from "react-hot-toast";
@@ -15,6 +16,7 @@ import {
   getBookings,
   nextToken as nextTokenRequest,
   resetQueue as resetQueueRequest,
+  startServing as startServingRequest,
   skipToken as skipTokenRequest,
 } from "../services/queueService";
 
@@ -67,8 +69,145 @@ function getEmptySnapshot(selectedDay = "today") {
   };
 }
 
+function getNotificationEta(token, snapshot) {
+  const avgServiceTime = snapshot?.stats?.avgServiceTime || 0;
+
+  if (typeof token?.estimatedWaitingTime === "number") {
+    return Math.max(token.estimatedWaitingTime, 0);
+  }
+
+  if (typeof token?.tokensAhead === "number") {
+    return Math.max(token.tokensAhead * avgServiceTime, 0);
+  }
+
+  return 0;
+}
+
+function buildSoonNotification(token, snapshot, currentServingToken) {
+  const eta = getNotificationEta(token, snapshot);
+
+  return {
+    id: `soon-${token.id}-${Date.now()}`,
+    key: `soon:${token.id}:serving:${currentServingToken || "none"}`,
+    type: "soon",
+    title: "You are coming soon.",
+    message: "Please stay ready for your turn.",
+    detail: `Approx ${eta} minute${eta === 1 ? "" : "s"} remaining`,
+  };
+}
+
+function buildNextNotification(token, snapshot, currentServingToken) {
+  const eta = getNotificationEta(token, snapshot);
+
+  return {
+    id: `next-${token.id}-${Date.now()}`,
+    key: `next:${token.id}:serving:${currentServingToken || "none"}`,
+    type: "next",
+    title: "Your turn is next. Please get ready.",
+    message: `Token ${token.tokenNumber} will be called after the current service finishes.`,
+    detail: `Approx ${eta} minute${eta === 1 ? "" : "s"} remaining`,
+  };
+}
+
+function buildArrivedNotification(token, currentServingToken = token?.tokenNumber) {
+  return {
+    id: `arrived-${token.id}-${Date.now()}`,
+    key: `arrived:${token.id}:serving:${currentServingToken || "none"}`,
+    type: "arrived",
+    title: "It's your turn now!",
+    message: `Token ${token.tokenNumber} is now being served.`,
+    detail: "Please head to the service desk.",
+  };
+}
+
+function resolveQueueNotification(previousMyToken, nextMyToken, snapshot) {
+  if (!nextMyToken) {
+    return null;
+  }
+
+  const currentServingToken = snapshot?.currentServing?.tokenNumber || null;
+
+  if (
+    nextMyToken.status === "serving" &&
+    previousMyToken?.status !== "serving" &&
+    currentServingToken === nextMyToken.tokenNumber
+  ) {
+    return buildArrivedNotification(nextMyToken, currentServingToken);
+  }
+
+  if (nextMyToken.status !== "waiting" || !currentServingToken) {
+    return null;
+  }
+
+  if (nextMyToken.tokensAhead === 1) {
+    return buildNextNotification(nextMyToken, snapshot, currentServingToken);
+  }
+
+  if (nextMyToken.tokensAhead === 2) {
+    return buildSoonNotification(nextMyToken, snapshot, currentServingToken);
+  }
+
+  return null;
+}
+
+function resolveSocketNotification(signal, userTokens) {
+  if (!signal || !Array.isArray(userTokens) || !userTokens.length) {
+    return null;
+  }
+
+  const activeToken = userTokens.find(
+    (token) =>
+      token.bookingDayKey === signal.dayKey &&
+      [ "waiting", "serving" ].includes(token.status),
+  );
+
+  if (!activeToken) {
+    return null;
+  }
+
+  if (
+    activeToken.status === "serving" &&
+    signal.currentServingToken &&
+    activeToken.tokenNumber === signal.currentServingToken
+  ) {
+    return buildArrivedNotification(activeToken, signal.currentServingToken);
+  }
+
+  if (activeToken.status !== "waiting") {
+    return null;
+  }
+
+  if (
+    signal.nextTokenNumber &&
+    activeToken.tokenNumber === signal.nextTokenNumber
+  ) {
+    return buildNextNotification(
+      activeToken,
+      { stats: { avgServiceTime: signal.avgServiceTime } },
+      signal.currentServingToken,
+    );
+  }
+
+  if (
+    signal.soonTokenNumber &&
+    activeToken.tokenNumber === signal.soonTokenNumber
+  ) {
+    return buildSoonNotification(
+      activeToken,
+      { stats: { avgServiceTime: signal.avgServiceTime } },
+      signal.currentServingToken,
+    );
+  }
+
+  return null;
+}
+
 export function QueueProvider({ children }) {
   const { token, user } = useAuth();
+  const lastUserTokenRef = useRef(null);
+  const latestUserTokensRef = useRef([]);
+  const notificationTimeoutsRef = useRef(new Map());
+  const seenNotificationKeysRef = useRef(new Set());
   const [selectedDay, setSelectedDay] = useState("today");
   const [state, setState] = useState({
     snapshot: null,
@@ -79,43 +218,92 @@ export function QueueProvider({ children }) {
     bookingsLoading: false,
     refreshing: false,
     socketConnected: false,
+    notifications: [],
   });
 
+  const dismissNotification = useCallback((notificationId) => {
+    const timeoutId = notificationTimeoutsRef.current.get(notificationId);
+
+    if (timeoutId) {
+      window.clearTimeout(timeoutId);
+      notificationTimeoutsRef.current.delete(notificationId);
+    }
+
+    setState((previous) => ({
+      ...previous,
+      notifications: previous.notifications.filter(
+        (notification) => notification.id !== notificationId,
+      ),
+    }));
+  }, []);
+
+  const enqueueNotification = useCallback((notification) => {
+    if (!notification?.key || seenNotificationKeysRef.current.has(notification.key)) {
+      return;
+    }
+
+    seenNotificationKeysRef.current.add(notification.key);
+    setState((previous) => {
+      if (
+        previous.notifications.some(
+          (item) => item.key === notification.key || item.id === notification.id,
+        )
+      ) {
+        return previous;
+      }
+
+      return {
+        ...previous,
+        notifications: [notification, ...previous.notifications].slice(0, 3),
+      };
+    });
+
+    const timeoutId = window.setTimeout(() => {
+      dismissNotification(notification.id);
+    }, 5000);
+
+    notificationTimeoutsRef.current.set(notification.id, timeoutId);
+  }, [dismissNotification]);
+
+  useEffect(() => {
+    const notificationTimeouts = notificationTimeoutsRef.current;
+
+    return () => {
+      notificationTimeouts.forEach((timeoutId) => {
+        window.clearTimeout(timeoutId);
+      });
+      notificationTimeouts.clear();
+    };
+  }, []);
+
+  useEffect(() => {
+    lastUserTokenRef.current = null;
+    latestUserTokensRef.current = [];
+    seenNotificationKeysRef.current.clear();
+    notificationTimeoutsRef.current.forEach((timeoutId) => {
+      window.clearTimeout(timeoutId);
+    });
+    notificationTimeoutsRef.current.clear();
+    setState((previous) => ({
+      ...previous,
+      notifications: [],
+    }));
+  }, [user?.id, user?.role]);
+
   const applySnapshot = useCallback((snapshot) => {
+    const nextMyToken = user?.role === "user" ? snapshot.myToken || null : null;
+    const previousMyToken = user?.role === "user" ? lastUserTokenRef.current : null;
+    const nextUserTokens = user?.role === "user" ? snapshot.userHistory || [] : [];
+    const queueNotification =
+      user?.role === "user"
+        ? resolveQueueNotification(previousMyToken, nextMyToken, snapshot)
+        : null;
+
+    lastUserTokenRef.current = nextMyToken;
+    latestUserTokensRef.current = nextUserTokens;
+
     startTransition(() => {
       setState((previous) => {
-        const nextMyToken = user?.role === "user" ? snapshot.myToken || null : null;
-        const previousMyToken = previous.snapshot?.myToken || null;
-
-        if (
-          nextMyToken?.status === "serving" &&
-          previousMyToken?.status !== "serving"
-        ) {
-          toast.success(`Token ${nextMyToken.tokenNumber} is now being served.`);
-        }
-
-        if (
-          previousMyToken &&
-          nextMyToken?.status === "waiting" &&
-          previousMyToken.status === "waiting" &&
-          previousMyToken.tokensAhead > 2 &&
-          nextMyToken.tokensAhead <= 2
-        ) {
-          toast(
-            nextMyToken.tokensAhead === 0
-              ? "Your turn is near. Please stay ready."
-              : `Your turn is near. ${nextMyToken.tokensAhead} people ahead.`,
-          );
-        }
-
-        if (
-          previousMyToken &&
-          nextMyToken?.status === "completed" &&
-          previousMyToken.status !== "completed"
-        ) {
-          toast.success(`Token ${nextMyToken.tokenNumber} has been completed.`);
-        }
-
         return {
           ...previous,
           snapshot: {
@@ -129,7 +317,11 @@ export function QueueProvider({ children }) {
         };
       });
     });
-  }, [user?.role]);
+
+    if (queueNotification) {
+      enqueueNotification(queueNotification);
+    }
+  }, [enqueueNotification, user?.role]);
 
   const refreshQueue = useCallback(async ({ silent = true, day = selectedDay } = {}) => {
     if (!silent) {
@@ -234,6 +426,20 @@ export function QueueProvider({ children }) {
         socketConnected: connected,
       }));
     },
+    onNotifyNextUser: (signal) => {
+      if (user?.role !== "user") {
+        return;
+      }
+
+      const notification = resolveSocketNotification(
+        signal,
+        latestUserTokensRef.current,
+      );
+
+      if (notification) {
+        enqueueNotification(notification);
+      }
+    },
     onQueueUpdated: () => {
       void refreshQueue();
 
@@ -327,11 +533,13 @@ export function QueueProvider({ children }) {
         completedQueue: snapshot.completedQueue,
         currentServing: snapshot.currentServing,
         daySummaries: snapshot.days || [],
+        dismissNotification,
         generatedAt: snapshot.generatedAt,
         loading: state.loading,
         myToken: snapshot.myToken,
         nextToken: () => runAdminAction("next", nextTokenRequest),
         nextUp: snapshot.nextUp,
+        notifications: state.notifications,
         queue: snapshot.queue,
         refreshBookings: (day) => refreshBookings(day || selectedDay),
         refreshQueue,
@@ -343,6 +551,7 @@ export function QueueProvider({ children }) {
         services: snapshot.services,
         skipToken: () => runAdminAction("skip", skipTokenRequest),
         socketConnected: state.socketConnected,
+        startServing: () => runAdminAction("start", startServingRequest),
         stats: snapshot.stats,
         userHistory: snapshot.userHistory || [],
       }}

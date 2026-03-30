@@ -46,6 +46,36 @@ export async function nextToken(token, day = "today") {
   return data;
 }
 
+export async function startServing(token, day = "today") {
+  const payload = {
+    day,
+    mode: "start",
+    startServing: true,
+  };
+
+  try {
+    const { data } = await api.post(
+      "/start-serving",
+      payload,
+      buildRequestConfig(token),
+    );
+    return data;
+  } catch (error) {
+    const message = String(error?.message || "");
+
+    if (!message.includes("Route not found")) {
+      throw error;
+    }
+
+    const { data } = await api.post(
+      "/next-token",
+      payload,
+      buildRequestConfig(token),
+    );
+    return data;
+  }
+}
+
 export async function skipToken(token, day = "today") {
   const { data } = await api.post(
     "/skip-token",

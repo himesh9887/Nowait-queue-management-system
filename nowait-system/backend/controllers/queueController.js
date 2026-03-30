@@ -9,6 +9,7 @@ const {
 } = require("../utils/queueMetrics");
 const {
   emitQueueUpdated,
+  emitNotifyNextUser,
   emitTokenBooked,
   emitTokenCalled,
 } = require("../sockets/queueSocket");
@@ -49,6 +50,67 @@ function getRequestedDay(req) {
   return resolveBookingDay(
     normalizeBodyValue(req.body?.day || req.body?.bookingDay || req.query?.day),
   );
+}
+
+function buildQueueNotificationSignal(snapshot) {
+  const waitingQueue = (snapshot?.queue || []).filter(
+    (token) => token.status === TOKEN_STATUSES.WAITING,
+  );
+
+  return {
+    day: snapshot?.selectedDay?.relativeLabel || null,
+    dayKey: snapshot?.selectedDay?.key || null,
+    currentServingToken: snapshot?.currentServing?.tokenNumber || null,
+    nextTokenNumber: waitingQueue[0]?.tokenNumber || null,
+    soonTokenNumber: waitingQueue[1]?.tokenNumber || null,
+    avgServiceTime: snapshot?.stats?.avgServiceTime || 0,
+    generatedAt: snapshot?.generatedAt || new Date().toISOString(),
+  };
+}
+
+function emitRealtimeQueueState(snapshot) {
+  emitTokenCalled(snapshot?.currentServing || null);
+  emitNotifyNextUser(buildQueueNotificationSignal(snapshot));
+  emitQueueUpdated(snapshot);
+}
+
+async function findCurrentServingToken(dayKey) {
+  return Token.findOne({
+    bookingDayKey: dayKey,
+    status: TOKEN_STATUSES.SERVING,
+  }).sort({ tokenNumber: 1 });
+}
+
+async function findNextWaitingToken(dayKey) {
+  return Token.findOne({
+    bookingDayKey: dayKey,
+    status: TOKEN_STATUSES.WAITING,
+  }).sort({ tokenNumber: 1 });
+}
+
+async function completeToken(token, { skipped = false } = {}) {
+  if (!token) {
+    return null;
+  }
+
+  token.status = TOKEN_STATUSES.COMPLETED;
+  token.completedAt = new Date();
+  token.wasSkipped = Boolean(skipped);
+  token.estimatedTime = 0;
+  await token.save();
+  return token;
+}
+
+async function startTokenService(token) {
+  if (!token) {
+    return null;
+  }
+
+  token.status = TOKEN_STATUSES.SERVING;
+  token.calledAt = new Date();
+  token.estimatedTime = 0;
+  await token.save();
+  return token;
 }
 
 async function bookToken(req, res, next) {
@@ -111,6 +173,7 @@ async function bookToken(req, res, next) {
     const tokenSnapshot = snapshot.myToken || createTokenSnapshot(token, snapshot);
 
     emitTokenBooked(tokenSnapshot);
+    emitNotifyNextUser(buildQueueNotificationSignal(snapshot));
     emitQueueUpdated(snapshot);
 
     return res.status(201).json({
@@ -192,6 +255,8 @@ async function getBookings(req, res, next) {
 async function nextToken(req, res, next) {
   try {
     const bookingDay = getRequestedDay(req);
+    const wantsToStartQueue =
+      req.body?.mode === "start" || req.body?.startServing === true;
 
     if (!bookingDay) {
       return res.status(400).json({
@@ -205,34 +270,45 @@ async function nextToken(req, res, next) {
       });
     }
 
-    const currentServing = await Token.findOne({
-      bookingDayKey: bookingDay.key,
-      status: TOKEN_STATUSES.SERVING,
-    }).sort({ tokenNumber: 1 });
+    const currentServing = await findCurrentServingToken(bookingDay.key);
 
-    if (currentServing) {
-      currentServing.status = TOKEN_STATUSES.COMPLETED;
-      currentServing.completedAt = new Date();
-      currentServing.estimatedTime = 0;
-      await currentServing.save();
-    }
+    if (!currentServing) {
+      const nextWaitingCandidate = await findNextWaitingToken(bookingDay.key);
 
-    const nextWaiting = await Token.findOne({
-      bookingDayKey: bookingDay.key,
-      status: TOKEN_STATUSES.WAITING,
-    }).sort({ tokenNumber: 1 });
+      if (!nextWaitingCandidate) {
+        return res.status(404).json({
+          message: "There are no waiting tokens in the selected queue.",
+        });
+      }
 
-    if (!currentServing && !nextWaiting) {
-      return res.status(404).json({
-        message: "There are no waiting tokens in the selected queue.",
+      if (wantsToStartQueue) {
+        await startTokenService(nextWaitingCandidate);
+        await syncQueueEstimates(bookingDay.key);
+
+        const snapshot = await buildQueueSnapshot({
+          day: bookingDay.relativeLabel,
+        });
+
+        emitRealtimeQueueState(snapshot);
+
+        return res.status(200).json({
+          message: `Token ${nextWaitingCandidate.tokenNumber} is now being served.`,
+          currentServing: snapshot.currentServing,
+          snapshot,
+        });
+      }
+
+      return res.status(409).json({
+        message: "Queue has not started yet. Use Start Serving to begin.",
       });
     }
 
+    await completeToken(currentServing, { skipped: false });
+
+    const nextWaiting = await findNextWaitingToken(bookingDay.key);
+
     if (nextWaiting) {
-      nextWaiting.status = TOKEN_STATUSES.SERVING;
-      nextWaiting.calledAt = new Date();
-      nextWaiting.estimatedTime = 0;
-      await nextWaiting.save();
+      await startTokenService(nextWaiting);
     }
 
     await syncQueueEstimates(bookingDay.key);
@@ -241,13 +317,12 @@ async function nextToken(req, res, next) {
       day: bookingDay.relativeLabel,
     });
 
-    emitTokenCalled(snapshot.currentServing);
-    emitQueueUpdated(snapshot);
+    emitRealtimeQueueState(snapshot);
 
     return res.status(200).json({
       message: snapshot.currentServing
         ? `Token ${snapshot.currentServing.tokenNumber} is now being served.`
-        : "Queue advanced successfully.",
+        : `Token ${currentServing.tokenNumber} completed. Queue is now empty.`,
       currentServing: snapshot.currentServing,
       snapshot,
     });
@@ -272,40 +347,20 @@ async function skipToken(req, res, next) {
       });
     }
 
-    let skippedToken = await Token.findOne({
-      bookingDayKey: bookingDay.key,
-      status: TOKEN_STATUSES.SERVING,
-    }).sort({ tokenNumber: 1 });
+    const skippedToken = await findCurrentServingToken(bookingDay.key);
 
     if (!skippedToken) {
-      skippedToken = await Token.findOne({
-        bookingDayKey: bookingDay.key,
-        status: TOKEN_STATUSES.WAITING,
-      }).sort({ tokenNumber: 1 });
-    }
-
-    if (!skippedToken) {
-      return res.status(404).json({
-        message: "There are no tokens available to skip.",
+      return res.status(409).json({
+        message: "No token is currently being served. Start the queue first.",
       });
     }
 
-    skippedToken.status = TOKEN_STATUSES.COMPLETED;
-    skippedToken.completedAt = new Date();
-    skippedToken.wasSkipped = true;
-    skippedToken.estimatedTime = 0;
-    await skippedToken.save();
+    await completeToken(skippedToken, { skipped: true });
 
-    const nextWaiting = await Token.findOne({
-      bookingDayKey: bookingDay.key,
-      status: TOKEN_STATUSES.WAITING,
-    }).sort({ tokenNumber: 1 });
+    const nextWaiting = await findNextWaitingToken(bookingDay.key);
 
     if (nextWaiting) {
-      nextWaiting.status = TOKEN_STATUSES.SERVING;
-      nextWaiting.calledAt = new Date();
-      nextWaiting.estimatedTime = 0;
-      await nextWaiting.save();
+      await startTokenService(nextWaiting);
     }
 
     await syncQueueEstimates(bookingDay.key);
@@ -314,8 +369,7 @@ async function skipToken(req, res, next) {
       day: bookingDay.relativeLabel,
     });
 
-    emitTokenCalled(snapshot.currentServing);
-    emitQueueUpdated(snapshot);
+    emitRealtimeQueueState(snapshot);
 
     return res.status(200).json({
       message: `Token ${skippedToken.tokenNumber} skipped successfully.`,
@@ -354,11 +408,61 @@ async function resetQueue(req, res, next) {
       day: bookingDay.relativeLabel,
     });
 
-    emitTokenCalled(null);
-    emitQueueUpdated(snapshot);
+    emitRealtimeQueueState(snapshot);
 
     return res.status(200).json({
       message: `${bookingDay.label} queue reset successfully.`,
+      snapshot,
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function startServing(req, res, next) {
+  try {
+    const bookingDay = getRequestedDay(req);
+
+    if (!bookingDay) {
+      return res.status(400).json({
+        message: "Queue day must be either today or tomorrow.",
+      });
+    }
+
+    if (!bookingDay.canServe) {
+      return res.status(400).json({
+        message: "Tomorrow bookings cannot be served today.",
+      });
+    }
+
+    const currentServing = await findCurrentServingToken(bookingDay.key);
+
+    if (currentServing) {
+      return res.status(409).json({
+        message: `Token ${currentServing.tokenNumber} is already being served.`,
+      });
+    }
+
+    const nextWaiting = await findNextWaitingToken(bookingDay.key);
+
+    if (!nextWaiting) {
+      return res.status(404).json({
+        message: "There are no waiting tokens available to start serving.",
+      });
+    }
+
+    await startTokenService(nextWaiting);
+    await syncQueueEstimates(bookingDay.key);
+
+    const snapshot = await buildQueueSnapshot({
+      day: bookingDay.relativeLabel,
+    });
+
+    emitRealtimeQueueState(snapshot);
+
+    return res.status(200).json({
+      message: `Token ${nextWaiting.tokenNumber} is now being served.`,
+      currentServing: snapshot.currentServing,
       snapshot,
     });
   } catch (error) {
@@ -372,5 +476,6 @@ module.exports = {
   getQueueStatus,
   nextToken,
   resetQueue,
+  startServing,
   skipToken,
 };

@@ -65,7 +65,14 @@ function emitTokenCalled(token) {
   }
 }
 
+function emitNotifyNextUser(payload) {
+  if (io) {
+    io.emit("notifyNextUser", payload);
+  }
+}
+
 module.exports = {
+  emitNotifyNextUser,
   emitQueueUpdated,
   emitTokenBooked,
   emitTokenCalled,
