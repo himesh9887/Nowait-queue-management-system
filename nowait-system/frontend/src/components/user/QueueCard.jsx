@@ -3,34 +3,27 @@ import {
   formatMinutes,
   formatToken,
 } from "../../utils/formatters";
-import {
-  BellIcon,
-  ChartIcon,
-  QueuePulseIcon,
-  SparkWaveIcon,
-} from "./UserIcons";
+import { QueuePulseIcon, SparkWaveIcon } from "./UserIcons";
 
-export default function QueueStatus({
+export default function QueueCard({
   currentServing,
-  queue,
-  socketConnected,
-  stats,
-  notice,
   generatedAt,
+  queue,
   selectedDayInfo,
+  socketConnected,
 }) {
-  const upcomingTokens = queue.filter((token) => token.status !== "serving").slice(0, 4);
+  const upcomingTokens = queue.filter((token) => token.status !== "serving").slice(0, 3);
 
   return (
     <section className="user-dashboard-card">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <div className="user-dashboard-label">Live Queue Status</div>
+          <div className="user-dashboard-label">Live Queue Card</div>
           <h2 className="mt-3 text-2xl font-semibold tracking-tight text-white">
-            {selectedDayInfo?.label || "Selected"} service desk pulse
+            Queue status in real time
           </h2>
           <p className="mt-3 max-w-xl text-sm leading-7 text-slate-300">
-            Track the current serving token, upcoming queue movement, and live system activity without refreshing.
+            Watch the desk activity and upcoming tokens without refreshing the page.
           </p>
         </div>
 
@@ -42,76 +35,49 @@ export default function QueueStatus({
                 : "bg-slate-500"
             }`}
           />
-          <span>{socketConnected ? "Realtime online" : "Realtime reconnecting"}</span>
+          <span>{socketConnected ? "Live queue online" : "Queue reconnecting"}</span>
         </div>
       </div>
 
-      {notice ? (
-        <div
-          className={`user-notice-card mt-6 ${
-            notice.tone === "priority"
-              ? "user-notice-card-priority"
-              : notice.tone === "active"
-                ? "user-notice-card-active"
-                : "user-notice-card-neutral"
-          }`}
-        >
-          <BellIcon className="mt-0.5 h-5 w-5 shrink-0" />
-          <div>
-            <div className="font-semibold text-white">{notice.title}</div>
-            <div className="mt-1 text-sm leading-6 text-slate-200/90">
-              {notice.message}
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      <div className="mt-6 grid gap-5 lg:grid-cols-[0.94fr_1.06fr]">
+      <div className="mt-8 grid gap-5 lg:grid-cols-[0.92fr_1.08fr]">
         <div className="user-serving-board">
-          <div className="flex items-center gap-3 text-sky-200">
+          <div className="flex items-center gap-2 text-sky-200">
             <QueuePulseIcon className="h-5 w-5" />
-            <span className="user-dashboard-label text-sky-200/90">Now serving</span>
+            <span className="user-dashboard-label text-sky-200/90">Current serving token</span>
           </div>
-          <div className="mt-6 text-[4.6rem] font-semibold leading-none tracking-tight text-white sm:text-[5.2rem]">
+          <div className="mt-6 text-[4.2rem] font-semibold leading-none tracking-tight text-white sm:text-[5rem]">
             {formatToken(currentServing?.tokenNumber)}
           </div>
           <div className="mt-3 text-base text-slate-300">
-            {selectedDayInfo?.label || "Selected"} queue
+            Now serving in the {selectedDayInfo?.label?.toLowerCase() || "selected"} queue
           </div>
-          <div className="mt-6 text-sm text-slate-400">
-            Last queue sync: {formatDateTime(generatedAt)}
+          <div className="mt-6 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-slate-300">
+            Updated {formatDateTime(generatedAt)}
           </div>
         </div>
 
-        <div className="grid gap-4">
+        <div className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="user-metric-tile">
-              <div className="flex items-center gap-2 text-slate-300">
-                <ChartIcon className="h-[18px] w-[18px] text-violet-200" />
-                <span className="user-dashboard-label text-slate-300">Avg service time</span>
-              </div>
-              <div className="mt-3 text-2xl font-semibold text-white">
-                {formatMinutes(stats.avgServiceTime)}
-              </div>
+              <div className="user-dashboard-label">Active queue</div>
+              <div className="mt-3 text-2xl font-semibold text-white">{queue.length}</div>
             </div>
             <div className="user-metric-tile">
               <div className="flex items-center gap-2 text-slate-300">
-                <SparkWaveIcon className="h-[18px] w-[18px] text-sky-200" />
-                <span className="user-dashboard-label text-slate-300">
-                  {selectedDayInfo?.label || "Selected"} tokens
-                </span>
+                <SparkWaveIcon className="h-4 w-4 text-violet-200" />
+                <span className="user-dashboard-label text-slate-300">Queue flow</span>
               </div>
               <div className="mt-3 text-2xl font-semibold text-white">
-                {stats.totalTokens}
+                {upcomingTokens.length ? "Moving" : "Quiet"}
               </div>
             </div>
           </div>
 
           <div className="rounded-[1.5rem] border border-white/10 bg-slate-950/[0.55] p-4">
             <div className="flex items-center justify-between gap-4">
-              <div className="text-sm font-medium text-white">Upcoming queue</div>
+              <div className="text-sm font-medium text-white">Upcoming tokens</div>
               <div className="text-xs uppercase tracking-[0.22em] text-slate-400">
-                {queue.length} active
+                Next in line
               </div>
             </div>
 
@@ -140,7 +106,7 @@ export default function QueueStatus({
                 ))
               ) : (
                 <div className="rounded-[1.15rem] border border-dashed border-white/10 bg-white/[0.02] px-4 py-6 text-sm text-slate-400">
-                  No waiting tokens in the queue right now.
+                  No waiting tokens are in line right now.
                 </div>
               )}
             </div>

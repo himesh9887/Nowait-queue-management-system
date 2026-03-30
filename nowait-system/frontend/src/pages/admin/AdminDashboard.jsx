@@ -1,29 +1,68 @@
-import { useDeferredValue, useState } from "react";
-import GlassPanel from "../../components/GlassPanel";
-import LiveBoard from "../../components/LiveBoard";
+import { useDeferredValue, useEffect, useState } from "react";
+import Analytics from "../../components/admin/Analytics";
+import ControlPanel from "../../components/admin/ControlPanel";
+import {
+  BellIcon,
+  CalendarIcon,
+  CheckCircleIcon,
+  ClockIcon,
+  MenuIcon,
+  PulseIcon,
+  QueueIcon,
+  SparkIcon,
+  TicketIcon,
+} from "../../components/admin/AdminIcons";
+import QueueTable from "../../components/admin/QueueTable";
+import Sidebar from "../../components/admin/Sidebar";
+import StatsCards from "../../components/admin/StatsCards";
 import LoadingScreen from "../../components/LoadingScreen";
-import QueueTable from "../../components/QueueTable";
-import StatCard from "../../components/StatCard";
-import StatusBadge from "../../components/StatusBadge";
+import { useAuth } from "../../context/AuthContext";
+import { useQueue } from "../../context/QueueContext";
 import {
   formatDateTime,
-  formatMinutes,
+  formatLongDate,
   formatShortDate,
   formatToken,
 } from "../../utils/formatters";
-import { useQueue } from "../../context/QueueContext";
+
+const bookingFilters = [
+  { key: "all", label: "All bookings" },
+  { key: "waiting", label: "Waiting" },
+  { key: "serving", label: "Serving" },
+  { key: "completed", label: "Completed" },
+  { key: "skipped", label: "Skipped" },
+];
+
+function getStatusTone(booking) {
+  if (booking.wasSkipped) {
+    return "bg-amber-400/12 text-amber-100";
+  }
+
+  if (booking.status === "completed") {
+    return "bg-emerald-400/12 text-emerald-100";
+  }
+
+  if (booking.status === "serving") {
+    return "bg-violet-400/12 text-violet-100";
+  }
+
+  return "bg-cyan-400/12 text-cyan-100";
+}
 
 export default function AdminDashboard() {
+  const { logout, user } = useAuth();
   const {
     bookings,
     bookingsLoading,
     busyAction,
     currentServing,
     daySummaries,
+    generatedAt,
     loading,
     nextToken,
     nextUp,
     queue,
+    refreshing,
     refreshBookings,
     refreshQueue,
     resetQueue,
@@ -36,15 +75,112 @@ export default function AdminDashboard() {
   } = useQueue();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
+  const [activeSection, setActiveSection] = useState("dashboard");
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showResetDialog, setShowResetDialog] = useState(false);
   const deferredSearch = useDeferredValue(search);
   const canServeSelectedDay = selectedDayInfo?.canServe;
+  const waitingTokens = queue.filter((token) => token.status === "waiting");
+  const nextTokens = waitingTokens.slice(0, 5);
+  const averageObservedWait = bookings
+    .map((booking) => {
+      if (!booking.createdAt || (!booking.calledAt && !booking.completedAt)) {
+        return null;
+      }
 
-  if (loading) {
-    return <LoadingScreen label="Loading admin operations..." />;
-  }
+      const start = new Date(booking.createdAt).getTime();
+      const served = new Date(booking.calledAt || booking.completedAt).getTime();
+      const diff = Math.round((served - start) / 60000);
 
+      return Number.isFinite(diff) && diff >= 0 ? diff : null;
+    })
+    .filter((value) => value !== null);
+  const averageWaitMinutes = averageObservedWait.length
+    ? Math.round(
+        averageObservedWait.reduce((total, value) => total + value, 0) /
+          averageObservedWait.length,
+      )
+    : stats.avgServiceTime;
+
+  const notificationItems = [
+    socketConnected
+      ? {
+          title: "Realtime queue sync is active",
+          detail: "Socket updates are flowing normally.",
+          toneClassName: "border-emerald-300/18 bg-emerald-400/[0.08] text-emerald-50",
+        }
+      : {
+          title: "Realtime sync is reconnecting",
+          detail: "The dashboard will refresh automatically once the socket recovers.",
+          toneClassName: "border-amber-300/18 bg-amber-400/[0.08] text-amber-50",
+        },
+    !canServeSelectedDay
+      ? {
+          title: `${selectedDayInfo?.label || "Selected day"} is locked`,
+          detail: "You can review tomorrow bookings, but service actions stay disabled until the day begins.",
+          toneClassName: "border-cyan-300/18 bg-cyan-400/[0.08] text-cyan-50",
+        }
+      : null,
+    currentServing
+      ? {
+          title: `Serving token ${formatToken(currentServing.tokenNumber)}`,
+          detail: `${currentServing.bookedBy || "Current customer"} is active right now.`,
+          toneClassName: "border-violet-300/18 bg-violet-400/[0.08] text-violet-50",
+        }
+      : {
+          title: "Queue is ready for the next call",
+          detail: "No token is currently marked as serving.",
+          toneClassName: "border-white/10 bg-white/[0.04] text-slate-100",
+        },
+  ].filter(Boolean);
+  const statsCards = [
+    {
+      label: "Total Tokens Today",
+      value: stats.todayTokens,
+      meta: "all bookings scheduled today",
+      badge: `${stats.tomorrowTokens} tomorrow`,
+      icon: TicketIcon,
+      iconClassName: "border-cyan-300/20 bg-cyan-400/[0.12] text-cyan-100",
+      accentClassName: "text-cyan-200",
+    },
+    {
+      label: "Active Queue",
+      value: stats.activeQueue,
+      meta: "serving and waiting entries",
+      badge: `${stats.waitingTokens} waiting`,
+      icon: QueueIcon,
+      iconClassName: "border-violet-300/20 bg-violet-400/[0.12] text-violet-100",
+      accentClassName: "text-violet-200",
+    },
+    {
+      label: "Completed Tokens",
+      value: stats.completedTokens,
+      meta: "finished or skipped today",
+      badge: "service outcomes",
+      icon: CheckCircleIcon,
+      iconClassName: "border-emerald-300/20 bg-emerald-400/[0.12] text-emerald-100",
+      accentClassName: "text-emerald-200",
+    },
+    {
+      label: "Average Waiting Time",
+      value: averageWaitMinutes ? `${averageWaitMinutes}m` : "Up next",
+      meta: "based on served bookings",
+      badge: "real queue pace",
+      icon: ClockIcon,
+      iconClassName: "border-amber-300/20 bg-amber-400/[0.12] text-amber-100",
+      accentClassName: "text-amber-200",
+    },
+  ];
   const filteredBookings = bookings.filter((booking) => {
-    const matchesFilter = filter === "all" ? true : booking.status === filter;
+    const matchesFilter =
+      filter === "all"
+        ? true
+        : filter === "skipped"
+          ? booking.wasSkipped
+          : filter === "completed"
+            ? booking.status === "completed" && !booking.wasSkipped
+            : booking.status === filter;
     const matchesSearch = deferredSearch
       ? `${booking.tokenNumber} ${booking.bookedBy || ""} ${
           booking.bookingLabel || ""
@@ -56,246 +192,615 @@ export default function AdminDashboard() {
     return matchesFilter && matchesSearch;
   });
 
-  async function handleResetQueue() {
-    const shouldReset = window.confirm(
-      `Reset the ${selectedDayInfo?.label?.toLowerCase() || "selected"} queue and remove all tokens?`,
+  useEffect(() => {
+    const sectionIds = [
+      "dashboard",
+      "queue-management",
+      "booking-management",
+      "analytics",
+    ];
+    const sections = sectionIds
+      .map((sectionId) => document.getElementById(sectionId))
+      .filter(Boolean);
+
+    if (!sections.length) {
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visibleEntry = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((first, second) => second.intersectionRatio - first.intersectionRatio)[0];
+
+        if (visibleEntry?.target?.id) {
+          setActiveSection(visibleEntry.target.id);
+        }
+      },
+      {
+        rootMargin: "-20% 0px -52% 0px",
+        threshold: [0.15, 0.4, 0.65],
+      },
     );
 
-    if (shouldReset) {
-      await resetQueue();
-    }
+    sections.forEach((section) => observer.observe(section));
+
+    return () => observer.disconnect();
+  }, []);
+
+  function handleNavigate(sectionId) {
+    setActiveSection(sectionId);
+    document.getElementById(sectionId)?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }
+
+  async function handleRefresh() {
+    await refreshQueue({ silent: false });
+    await refreshBookings(selectedDay);
+  }
+
+  async function handleResetQueue() {
+    setShowResetDialog(false);
+    await resetQueue();
+  }
+
+  if (loading) {
+    return <LoadingScreen label="Loading admin dashboard..." />;
   }
 
   return (
-    <div className="space-y-6">
-      <GlassPanel
-        eyebrow="Operations Center"
-        title="Run the queue with live visibility"
-        description="Advance callers, protect tomorrow from early serving, and monitor every booking from a single responsive dashboard."
-      >
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <StatCard
-            label={`${selectedDayInfo?.label || "Selected"} tokens`}
-            value={stats.totalTokens}
-            description="All bookings in the active queue day"
+    <>
+      <div className="mx-auto max-w-[1720px]">
+        <div className="grid gap-6 xl:grid-cols-[310px_minmax(0,1fr)]">
+          <Sidebar
+            activeSection={activeSection}
+            daySummaries={daySummaries}
+            mobileOpen={mobileSidebarOpen}
+            onClose={() => setMobileSidebarOpen(false)}
+            onLogout={logout}
+            onNavigate={handleNavigate}
+            socketConnected={socketConnected}
+            user={user}
           />
-          <StatCard
-            label="Active queue"
-            value={stats.activeQueue}
-            description="Waiting or currently serving"
-          />
-          <StatCard
-            label="Completed"
-            value={stats.completedTokens}
-            description="Finished and skipped tokens"
-          />
-          <StatCard
-            label="System status"
-            value={socketConnected ? "Live" : "Syncing"}
-            description="Real-time socket connection"
-          />
-        </div>
 
-        <div className="mt-6 grid gap-3 sm:grid-cols-2">
-          {daySummaries.map((day) => {
-            const active = day.relativeLabel === selectedDay;
+          <main className="min-w-0 space-y-6">
+            <header className="admin-panel admin-fade-up overflow-visible">
+              <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+                <div className="flex items-start gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setMobileSidebarOpen(true)}
+                    className="admin-chip h-11 w-11 justify-center p-0 xl:hidden"
+                    aria-label="Open navigation"
+                  >
+                    <MenuIcon />
+                  </button>
 
-            return (
-              <button
-                key={day.key}
-                type="button"
-                onClick={() => setSelectedDay(day.relativeLabel)}
-                className={`rounded-[1.5rem] border p-4 text-left transition ${
-                  active
-                    ? "border-cyan-400/35 bg-cyan-400/[0.12] shadow-[0_18px_40px_rgba(34,211,238,0.12)]"
-                    : "border-white/10 bg-white/[0.04] hover:border-white/20 hover:bg-white/[0.06]"
-                }`}
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <div className="text-lg font-semibold text-white">{day.label}</div>
-                  <div className="text-xs uppercase tracking-[0.24em] text-slate-400">
-                    {day.displayDate}
+                  <div>
+                    <div className="admin-kicker">Admin Dashboard</div>
+                    <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white">
+                      Welcome back, {user?.displayName || "Admin"}
+                    </h1>
+                    <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-400">
+                      Monitor live tokens, control the queue with confidence, and
+                      keep booking operations aligned across today and tomorrow.
+                    </p>
                   </div>
                 </div>
-                <div className="mt-4 grid grid-cols-3 gap-3 text-sm text-slate-300">
-                  <div>
-                    <div className="user-dashboard-label">Waiting</div>
-                    <div className="mt-1 text-xl font-semibold text-white">
-                      {day.waitingTokens}
-                    </div>
+
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="admin-chip">
+                    <CalendarIcon className="h-4 w-4 text-cyan-200" />
+                    {formatLongDate(new Date())}
                   </div>
-                  <div>
-                    <div className="user-dashboard-label">Serving</div>
-                    <div className="mt-1 text-xl font-semibold text-white">
-                      {formatToken(day.currentServingToken)}
-                    </div>
+
+                  <div className="admin-chip">
+                    <span
+                      className={`h-2 w-2 rounded-full ${
+                        refreshing
+                          ? "bg-amber-300"
+                          : socketConnected
+                            ? "bg-emerald-300"
+                            : "bg-slate-400"
+                      }`}
+                    />
+                    {refreshing ? "Refreshing" : socketConnected ? "Live" : "Offline"}
                   </div>
-                  <div>
-                    <div className="user-dashboard-label">Forecast</div>
-                    <div className="mt-1 text-xl font-semibold text-white">
-                      {formatMinutes(day.queueForecast)}
+
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setShowNotifications((current) => !current)}
+                      className="admin-chip relative"
+                    >
+                      <BellIcon className="h-4 w-4 text-cyan-200" />
+                      Alerts
+                      <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-cyan-300 px-2 text-xs font-semibold text-slate-950">
+                        {notificationItems.length}
+                      </span>
+                    </button>
+
+                    {showNotifications ? (
+                      <div className="absolute right-0 top-[calc(100%+0.75rem)] z-30 w-[min(24rem,80vw)] rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(11,17,31,0.96),rgba(8,11,21,0.98))] p-4 shadow-[0_28px_80px_rgba(2,6,23,0.5)] backdrop-blur-3xl">
+                        <div className="text-xs uppercase tracking-[0.24em] text-slate-500">
+                          Notifications
+                        </div>
+                        <div className="mt-4 space-y-3">
+                          {notificationItems.map((item) => (
+                            <div
+                              key={item.title}
+                              className={`rounded-[1.35rem] border px-4 py-3 ${item.toneClassName}`}
+                            >
+                              <div className="text-sm font-semibold">{item.title}</div>
+                              <div className="mt-2 text-sm leading-6 opacity-80">
+                                {item.detail}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+            </header>
+            <section
+              id="dashboard"
+              className="admin-panel admin-dashboard-hero admin-fade-up"
+            >
+              <div className="admin-dashboard-glow" />
+              <div className="flex flex-col gap-6 2xl:flex-row 2xl:items-end 2xl:justify-between">
+                <div className="relative z-10">
+                  <div className="admin-kicker">Operations Overview</div>
+                  <h2 className="mt-3 max-w-3xl text-3xl font-semibold tracking-tight text-white">
+                    Premium visibility across queue flow, booking health, and live
+                    service activity.
+                  </h2>
+                  <div className="mt-6 flex flex-wrap gap-3">
+                    <div className="admin-chip">
+                      <PulseIcon className="h-4 w-4 text-cyan-200" />
+                      Accurate day-separated queues
+                    </div>
+                    <div className="admin-chip">
+                      <SparkIcon className="h-4 w-4 text-violet-200" />
+                      No token creation from admin
+                    </div>
+                    <div className="admin-chip">
+                      <ClockIcon className="h-4 w-4 text-amber-200" />
+                      Last sync {generatedAt ? formatDateTime(generatedAt) : "--"}
                     </div>
                   </div>
                 </div>
-              </button>
-            );
-          })}
+
+                <div className="relative z-10 grid gap-3 sm:grid-cols-2">
+                  {daySummaries.map((day) => {
+                    const isActive = day.relativeLabel === selectedDay;
+
+                    return (
+                      <button
+                        key={day.key}
+                        type="button"
+                        onClick={() => setSelectedDay(day.relativeLabel)}
+                        className={`rounded-[1.7rem] border p-4 text-left transition duration-300 ${
+                          isActive
+                            ? "border-cyan-300/24 bg-cyan-400/[0.12] shadow-[0_18px_48px_rgba(34,211,238,0.16)]"
+                            : "border-white/10 bg-white/[0.04] hover:-translate-y-0.5 hover:border-white/16 hover:bg-white/[0.06]"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <div className="text-lg font-semibold text-white">{day.label}</div>
+                            <div className="mt-1 text-xs uppercase tracking-[0.24em] text-slate-500">
+                              {day.displayDate}
+                            </div>
+                          </div>
+                          <div
+                            className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] ${
+                              day.canServe
+                                ? "bg-emerald-400/12 text-emerald-100"
+                                : "bg-amber-400/12 text-amber-100"
+                            }`}
+                          >
+                            {day.canServe ? "Live day" : "Locked"}
+                          </div>
+                        </div>
+
+                        <div className="mt-5 grid grid-cols-3 gap-3">
+                          <div className="rounded-[1.2rem] border border-white/8 bg-slate-950/[0.48] p-3">
+                            <div className="text-xs uppercase tracking-[0.2em] text-slate-500">
+                              Waiting
+                            </div>
+                            <div className="mt-2 text-xl font-semibold text-white">
+                              {day.waitingTokens}
+                            </div>
+                          </div>
+                          <div className="rounded-[1.2rem] border border-white/8 bg-slate-950/[0.48] p-3">
+                            <div className="text-xs uppercase tracking-[0.2em] text-slate-500">
+                              Serving
+                            </div>
+                            <div className="mt-2 text-xl font-semibold text-white">
+                              {formatToken(day.currentServingToken)}
+                            </div>
+                          </div>
+                          <div className="rounded-[1.2rem] border border-white/8 bg-slate-950/[0.48] p-3">
+                            <div className="text-xs uppercase tracking-[0.2em] text-slate-500">
+                              Completed
+                            </div>
+                            <div className="mt-2 text-xl font-semibold text-white">
+                              {day.completedTokens}
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="relative z-10 mt-6">
+                <StatsCards cards={statsCards} />
+              </div>
+            </section>
+            <section
+              id="queue-management"
+              className="grid gap-6 2xl:grid-cols-[1.1fr_0.9fr]"
+            >
+              <div className="admin-panel admin-fade-up">
+                <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+                  <div>
+                    <div className="admin-kicker">Live Queue</div>
+                    <h2 className="mt-3 text-2xl font-semibold tracking-tight text-white">
+                      Serving status for {selectedDayInfo?.label?.toLowerCase() || "today"}
+                    </h2>
+                    <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">
+                      The current serving token and the upcoming queue update
+                      automatically whenever a booking changes or the admin advances
+                      service.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => void handleRefresh()}
+                    className="secondary-button"
+                  >
+                    {refreshing ? "Refreshing..." : "Refresh dashboard"}
+                  </button>
+                </div>
+
+                <div className="mt-6 grid gap-4 xl:grid-cols-[1.08fr_0.92fr]">
+                  <div className="relative overflow-hidden rounded-[2rem] border border-emerald-300/18 bg-[linear-gradient(155deg,rgba(16,185,129,0.16),rgba(8,11,21,0.92)_55%)] p-6">
+                    <div className="absolute right-[-3rem] top-[-3rem] h-36 w-36 rounded-full bg-emerald-400/20 blur-3xl" />
+                    <div className="relative z-10">
+                      <div className="text-xs uppercase tracking-[0.24em] text-emerald-100/80">
+                        Current Serving Token
+                      </div>
+                      <div className="mt-6 text-7xl font-semibold tracking-tight text-white">
+                        {formatToken(currentServing?.tokenNumber)}
+                      </div>
+                      <div className="mt-4 text-lg text-emerald-50/90">
+                        {currentServing?.bookedBy || "Waiting for next service action"}
+                      </div>
+                      <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-emerald-300/18 bg-emerald-400/10 px-4 py-2 text-sm text-emerald-50">
+                        <span className="h-2.5 w-2.5 rounded-full bg-emerald-300 shadow-[0_0_18px_rgba(110,231,183,0.9)]" />
+                        {currentServing ? "Live serving now" : "Queue ready"}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    {nextTokens.length ? (
+                      nextTokens.map((token, index) => (
+                        <div
+                          key={token.id}
+                          className="rounded-[1.6rem] border border-white/10 bg-white/[0.04] p-4"
+                        >
+                          <div className="flex items-center justify-between gap-4">
+                            <div>
+                              <div className="text-xs uppercase tracking-[0.24em] text-slate-500">
+                                Next in queue
+                              </div>
+                              <div className="mt-2 text-3xl font-semibold tracking-tight text-white">
+                                {formatToken(token.tokenNumber)}
+                              </div>
+                            </div>
+                            <div className="rounded-full border border-cyan-300/18 bg-cyan-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-cyan-50">
+                              #{index + 1} next
+                            </div>
+                          </div>
+
+                          <div className="mt-4 flex items-center justify-between gap-4 text-sm text-slate-300">
+                            <span>{token.bookedBy || "Walk-in"}</span>
+                            <span>{token.estimatedWaitingTime} min ETA</span>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="flex h-full min-h-[240px] items-center justify-center rounded-[1.8rem] border border-dashed border-white/12 bg-white/[0.03] px-6 py-10 text-center text-sm text-slate-400">
+                        No upcoming tokens are waiting right now.
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                  <div className="admin-surface">
+                    <div className="text-xs uppercase tracking-[0.24em] text-slate-500">
+                      Queue health
+                    </div>
+                    <div className="mt-3 text-2xl font-semibold text-white">
+                      {socketConnected ? "Stable" : "Recovering"}
+                    </div>
+                  </div>
+                  <div className="admin-surface">
+                    <div className="text-xs uppercase tracking-[0.24em] text-slate-500">
+                      Waiting tokens
+                    </div>
+                    <div className="mt-3 text-2xl font-semibold text-white">
+                      {stats.waitingTokens}
+                    </div>
+                  </div>
+                  <div className="admin-surface">
+                    <div className="text-xs uppercase tracking-[0.24em] text-slate-500">
+                      Queue day
+                    </div>
+                    <div className="mt-3 text-2xl font-semibold text-white">
+                      {selectedDayInfo?.label || "Today"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <ControlPanel
+                busyAction={busyAction}
+                canServeSelectedDay={canServeSelectedDay}
+                currentServing={currentServing}
+                nextUp={nextUp}
+                onNext={nextToken}
+                onResetRequest={() => setShowResetDialog(true)}
+                onSkip={skipToken}
+                queueForecast={stats.queueForecast}
+                selectedDayInfo={selectedDayInfo}
+                socketConnected={socketConnected}
+              />
+            </section>
+
+            <QueueTable
+              title={`${selectedDayInfo?.label || "Selected"} Queue`}
+              description="Current serving and waiting rows are separated clearly so the admin can monitor the exact queue order at a glance."
+              tokens={queue}
+            />
+            <section id="booking-management" className="admin-panel admin-fade-up">
+              <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+                <div>
+                  <div className="admin-kicker">Booking Management</div>
+                  <h2 className="mt-3 text-2xl font-semibold tracking-tight text-white">
+                    Review {selectedDayInfo?.label?.toLowerCase() || "today"} bookings
+                  </h2>
+                  <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-400">
+                    Switch between today and tomorrow, filter status, and inspect the
+                    full booking ledger without leaving the dashboard.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {daySummaries.map((day) => (
+                    <button
+                      key={day.key}
+                      type="button"
+                      onClick={() => setSelectedDay(day.relativeLabel)}
+                      className={
+                        selectedDay === day.relativeLabel
+                          ? "primary-button"
+                          : "secondary-button"
+                      }
+                    >
+                      {day.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-6 grid gap-4 xl:grid-cols-[1fr_auto]">
+                <input
+                  className="soft-input"
+                  placeholder="Search by token number, user, booking label, or date"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                />
+
+                <div className="flex flex-wrap gap-2">
+                  {bookingFilters.map((item) => (
+                    <button
+                      key={item.key}
+                      type="button"
+                      className={
+                        filter === item.key ? "primary-button" : "secondary-button"
+                      }
+                      onClick={() => setFilter(item.key)}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {bookingsLoading ? (
+                <div className="mt-6 rounded-[1.75rem] border border-white/10 bg-white/[0.03] px-6 py-12 text-center text-sm text-slate-400">
+                  Loading bookings...
+                </div>
+              ) : filteredBookings.length ? (
+                <>
+                  <div className="mt-6 grid gap-3 md:hidden">
+                    {filteredBookings.map((booking) => (
+                      <div
+                        key={booking.id}
+                        className={`rounded-[1.6rem] border p-4 ${
+                          booking.isCurrent
+                            ? "border-emerald-300/18 bg-emerald-400/[0.08]"
+                            : "border-white/10 bg-white/[0.03]"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <div className="text-xs uppercase tracking-[0.24em] text-slate-500">
+                              Token
+                            </div>
+                            <div className="mt-2 text-3xl font-semibold tracking-tight text-white">
+                              {formatToken(booking.tokenNumber)}
+                            </div>
+                          </div>
+
+                          <div
+                            className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] ${getStatusTone(booking)}`}
+                          >
+                            {booking.wasSkipped ? "Skipped" : booking.status}
+                          </div>
+                        </div>
+
+                        <div className="mt-5 grid grid-cols-2 gap-3">
+                          <div className="admin-surface">
+                            <div className="text-xs uppercase tracking-[0.24em] text-slate-500">
+                              User
+                            </div>
+                            <div className="mt-2 text-sm font-medium text-white">
+                              {booking.bookedBy || "Walk-in"}
+                            </div>
+                          </div>
+                          <div className="admin-surface">
+                            <div className="text-xs uppercase tracking-[0.24em] text-slate-500">
+                              ETA
+                            </div>
+                            <div className="mt-2 text-sm font-medium text-white">
+                              {booking.estimatedWaitingTime || 0} min
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="mt-4 rounded-[1.35rem] border border-white/8 bg-slate-950/[0.48] p-4">
+                          <div className="text-xs uppercase tracking-[0.24em] text-slate-500">
+                            Booked
+                          </div>
+                          <div className="mt-2 text-sm font-medium text-white">
+                            {formatDateTime(booking.createdAt)}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-6 hidden overflow-x-auto md:block">
+                    <table className="min-w-full text-left">
+                      <thead className="border-b border-white/10 text-xs uppercase tracking-[0.24em] text-slate-500">
+                        <tr>
+                          <th className="px-4 py-4 font-medium">Token Number</th>
+                          <th className="px-4 py-4 font-medium">User Name</th>
+                          <th className="px-4 py-4 font-medium">Status</th>
+                          <th className="px-4 py-4 font-medium">Estimated Time</th>
+                          <th className="px-4 py-4 font-medium">Booking Date</th>
+                          <th className="px-4 py-4 font-medium">Created At</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredBookings.map((booking) => (
+                          <tr
+                            key={booking.id}
+                            className={`border-b border-white/[0.06] text-sm text-slate-200 last:border-b-0 ${
+                              booking.isCurrent
+                                ? "bg-emerald-400/[0.08]"
+                                : "hover:bg-white/[0.03]"
+                            }`}
+                          >
+                            <td className="px-4 py-4 font-semibold text-white">
+                              {formatToken(booking.tokenNumber)}
+                            </td>
+                            <td className="px-4 py-4 font-medium text-white">
+                              {booking.bookedBy || "Walk-in"}
+                            </td>
+                            <td className="px-4 py-4">
+                              <span
+                                className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] ${getStatusTone(booking)}`}
+                              >
+                                {booking.wasSkipped ? "Skipped" : booking.status}
+                              </span>
+                            </td>
+                            <td className="px-4 py-4">
+                              {booking.estimatedWaitingTime || 0} min
+                            </td>
+                            <td className="px-4 py-4">
+                              <div className="font-medium text-white">
+                                {booking.bookingLabel || "Booked"}
+                              </div>
+                              <div className="mt-1 text-xs uppercase tracking-[0.2em] text-slate-500">
+                                {formatShortDate(booking.bookingDate)}
+                              </div>
+                            </td>
+                            <td className="px-4 py-4 text-slate-400">
+                              {formatDateTime(booking.createdAt)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              ) : (
+                <div className="mt-6 rounded-[1.75rem] border border-dashed border-white/12 bg-white/[0.03] px-6 py-12 text-center">
+                  <div className="text-sm uppercase tracking-[0.24em] text-slate-500">
+                    No bookings match
+                  </div>
+                  <div className="mt-3 text-lg font-medium text-slate-200">
+                    Try a different queue day or status filter.
+                  </div>
+                </div>
+              )}
+            </section>
+
+            <section id="analytics">
+              <Analytics
+                bookings={bookings}
+                selectedDayInfo={selectedDayInfo}
+                stats={stats}
+              />
+            </section>
+          </main>
         </div>
-      </GlassPanel>
-
-      {!canServeSelectedDay ? (
-        <GlassPanel
-          eyebrow="Future Queue"
-          title="Tomorrow is visible but locked"
-          description="Tomorrow bookings are intentionally isolated. Admins can review the queue now, but service actions stay disabled until tomorrow begins."
-        />
-      ) : null}
-
-      <div className="grid gap-6 2xl:grid-cols-[1.1fr_0.9fr]">
-        <GlassPanel
-          eyebrow="Controls"
-          title={`${selectedDayInfo?.label || "Selected"} queue actions`}
-          description="Use these controls to keep the service line moving safely."
-        >
-          <div className="grid gap-4 md:grid-cols-2">
-            <button
-              type="button"
-              className="primary-button h-12"
-              disabled={busyAction === "next" || !canServeSelectedDay}
-              onClick={nextToken}
-            >
-              {busyAction === "next" ? "Calling next..." : "Next token"}
-            </button>
-            <button
-              type="button"
-              className="secondary-button h-12"
-              disabled={busyAction === "skip" || !canServeSelectedDay}
-              onClick={skipToken}
-            >
-              {busyAction === "skip" ? "Skipping token..." : "Skip token"}
-            </button>
-            <button
-              type="button"
-              className="secondary-button h-12"
-              onClick={() => {
-                void refreshQueue({ silent: false });
-                void refreshBookings(selectedDay);
-              }}
-            >
-              Refresh dashboard
-            </button>
-            <button
-              type="button"
-              className="danger-button h-12"
-              disabled={busyAction === "reset"}
-              onClick={handleResetQueue}
-            >
-              {busyAction === "reset" ? "Resetting queue..." : "Reset queue"}
-            </button>
-          </div>
-        </GlassPanel>
-
-        <LiveBoard
-          currentServing={currentServing}
-          nextUp={nextUp}
-          stats={stats}
-          selectedDayInfo={selectedDayInfo}
-        />
       </div>
 
-      <QueueTable
-        title={`${selectedDayInfo?.label || "Selected"} active queue`}
-        description="Serving and waiting tokens update automatically as bookings are created or the queue advances."
-        tokens={queue}
-        emptyMessage={`No active tokens in the ${selectedDayInfo?.label?.toLowerCase() || "selected"} queue right now.`}
-        showBookedBy
-      />
+      {showResetDialog ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 px-4 backdrop-blur-md">
+          <div className="w-full max-w-lg rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(11,17,31,0.96),rgba(8,11,21,0.98))] p-6 shadow-[0_28px_80px_rgba(2,6,23,0.55)]">
+            <div className="admin-kicker">Confirm Reset</div>
+            <h3 className="mt-3 text-2xl font-semibold tracking-tight text-white">
+              Reset the {selectedDayInfo?.label?.toLowerCase() || "selected"} queue?
+            </h3>
+            <p className="mt-4 text-sm leading-7 text-slate-400">
+              This removes all tokens for the selected day and resets that day&apos;s
+              queue counter. Today and tomorrow remain separate, but the selected
+              queue will be cleared immediately.
+            </p>
 
-      <GlassPanel
-        eyebrow="Manage Bookings"
-        title="Full token ledger"
-        description="Search and filter every token in the selected day while keeping the currently serving entry easy to spot."
-        className="p-0"
-      >
-        <div className="grid gap-4 border-b border-white/10 px-6 py-6 sm:grid-cols-[1fr_auto] sm:px-8">
-          <input
-            className="soft-input"
-            placeholder="Search by token, user, or booking day"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-          />
-
-          <div className="flex gap-2">
-            {["all", "waiting", "serving", "completed"].map((item) => (
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               <button
-                key={item}
                 type="button"
-                className={filter === item ? "primary-button" : "secondary-button"}
-                onClick={() => setFilter(item)}
+                onClick={() => setShowResetDialog(false)}
+                className="secondary-button"
               >
-                {item}
+                Cancel
               </button>
-            ))}
+              <button
+                type="button"
+                onClick={() => void handleResetQueue()}
+                className="danger-button"
+              >
+                {busyAction === "reset" ? "Resetting..." : "Confirm reset"}
+              </button>
+            </div>
           </div>
         </div>
-
-        {bookingsLoading ? (
-          <div className="px-6 py-10 text-sm text-slate-400 sm:px-8">
-            Loading bookings...
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-left">
-              <thead className="border-b border-white/10 bg-white/[0.04] text-xs uppercase tracking-[0.24em] text-slate-400">
-                <tr>
-                  <th className="px-6 py-4 sm:px-8">Token</th>
-                  <th className="px-6 py-4 sm:px-8">Booked By</th>
-                  <th className="px-6 py-4 sm:px-8">Booking Day</th>
-                  <th className="px-6 py-4 sm:px-8">Status</th>
-                  <th className="px-6 py-4 sm:px-8">Position</th>
-                  <th className="px-6 py-4 sm:px-8">ETA</th>
-                  <th className="px-6 py-4 sm:px-8">Created</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredBookings.map((booking) => (
-                  <tr
-                    key={booking.id}
-                    className={`border-b border-white/[0.06] text-sm text-slate-200 last:border-b-0 ${
-                      booking.isCurrent ? "bg-emerald-400/[0.08]" : ""
-                    }`}
-                  >
-                    <td className="px-6 py-4 font-semibold text-white sm:px-8">
-                      {formatToken(booking.tokenNumber)}
-                    </td>
-                    <td className="px-6 py-4 sm:px-8">{booking.bookedBy}</td>
-                    <td className="px-6 py-4 sm:px-8">
-                      <div className="font-medium text-white">
-                        {booking.bookingLabel || "Booked"}
-                      </div>
-                      <div className="mt-1 text-xs uppercase tracking-[0.2em] text-slate-500">
-                        {formatShortDate(booking.bookingDate)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 sm:px-8">
-                      <StatusBadge status={booking.status} skipped={booking.wasSkipped} />
-                    </td>
-                    <td className="px-6 py-4 sm:px-8">
-                      {booking.queuePosition || booking.position || "-"}
-                    </td>
-                    <td className="px-6 py-4 sm:px-8">
-                      {formatMinutes(booking.estimatedWaitingTime)}
-                    </td>
-                    <td className="px-6 py-4 text-slate-400 sm:px-8">
-                      {formatDateTime(booking.createdAt)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </GlassPanel>
-    </div>
+      ) : null}
+    </>
   );
 }
