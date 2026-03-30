@@ -1,6 +1,7 @@
 const QueueCounter = require("../models/QueueCounter");
 const Token = require("../models/Token");
-const { SERVICE_CATALOG, TOKEN_STATUSES } = require("../config/constants");
+const { TOKEN_STATUSES } = require("../config/constants");
+const { resolveBookingDay } = require("../utils/bookingDay");
 const {
   buildQueueSnapshot,
   createTokenSnapshot,
@@ -12,13 +13,27 @@ const {
   emitTokenCalled,
 } = require("../sockets/queueSocket");
 
-function validateServiceType(serviceType) {
-  return SERVICE_CATALOG.some((service) => service.id === serviceType);
+function normalizeBodyValue(value) {
+  return typeof value === "string" ? value.trim() : "";
 }
 
-async function getNextTokenNumber() {
+function resolveBookingUser(req) {
+  if (req.user?.id && req.user?.displayName) {
+    return {
+      userId: String(req.user.id).trim(),
+      userDisplayName: String(req.user.displayName).trim(),
+    };
+  }
+
+  return {
+    userId: normalizeBodyValue(req.body?.userId),
+    userDisplayName: normalizeBodyValue(req.body?.userDisplayName),
+  };
+}
+
+async function getNextTokenNumber(dayKey) {
   const counter = await QueueCounter.findOneAndUpdate(
-    { key: "global" },
+    { key: `queue:${dayKey}` },
     { $inc: { currentValue: 1 } },
     {
       new: true,
@@ -30,35 +45,76 @@ async function getNextTokenNumber() {
   return counter.currentValue;
 }
 
+function getRequestedDay(req) {
+  return resolveBookingDay(
+    normalizeBodyValue(req.body?.day || req.body?.bookingDay || req.query?.day),
+  );
+}
+
 async function bookToken(req, res, next) {
   try {
-    const { serviceType, timeSlot } = req.body ?? {};
+    const { userId, userDisplayName } = resolveBookingUser(req);
+    const bookingDay = getRequestedDay(req);
 
-    if (!serviceType || !validateServiceType(serviceType)) {
+    if (!userId || !userDisplayName) {
       return res.status(400).json({
-        message: "Please select a valid service before booking a token.",
+        message: "Both userId and userDisplayName are required to book a token.",
       });
     }
 
-    const tokenNumber = await getNextTokenNumber();
+    if (!bookingDay) {
+      return res.status(400).json({
+        message: "Booking day must be either today or tomorrow.",
+      });
+    }
 
+    const existingActiveToken = await Token.findOne({
+      userId,
+      bookingDayKey: bookingDay.key,
+      status: {
+        $in: [TOKEN_STATUSES.WAITING, TOKEN_STATUSES.SERVING],
+      },
+    }).sort({ tokenNumber: -1 });
+
+    if (existingActiveToken) {
+      await syncQueueEstimates(bookingDay.key);
+
+      const snapshot = await buildQueueSnapshot({
+        userId,
+        day: bookingDay.relativeLabel,
+      });
+
+      return res.status(409).json({
+        message: `You already have an active ${bookingDay.label.toLowerCase()} token.`,
+        token: createTokenSnapshot(existingActiveToken, snapshot),
+        snapshot,
+      });
+    }
+
+    const tokenNumber = await getNextTokenNumber(bookingDay.key);
     const token = await Token.create({
+      userId,
+      userDisplayName,
       tokenNumber,
-      serviceType,
-      timeSlot: timeSlot?.trim() || null,
+      bookingDate: bookingDay.bookingDate,
+      bookingDayKey: bookingDay.key,
       status: TOKEN_STATUSES.WAITING,
     });
 
-    await syncQueueEstimates();
+    await syncQueueEstimates(bookingDay.key);
 
-    const snapshot = await buildQueueSnapshot(token._id.toString());
+    const snapshot = await buildQueueSnapshot({
+      tokenId: token._id.toString(),
+      userId,
+      day: bookingDay.relativeLabel,
+    });
     const tokenSnapshot = snapshot.myToken || createTokenSnapshot(token, snapshot);
 
     emitTokenBooked(tokenSnapshot);
     emitQueueUpdated(snapshot);
 
     return res.status(201).json({
-      message: `Token ${tokenNumber} booked successfully.`,
+      message: `Token ${tokenNumber} booked for ${bookingDay.label.toLowerCase()}.`,
       token: tokenSnapshot,
       snapshot,
     });
@@ -69,13 +125,29 @@ async function bookToken(req, res, next) {
 
 async function getQueueStatus(req, res, next) {
   try {
-    const { tokenId } = req.query;
+    const bookingDay = getRequestedDay(req);
+    const userId = req.user?.id || normalizeBodyValue(req.query?.userId) || null;
 
-    await syncQueueEstimates();
+    if (!bookingDay) {
+      return res.status(400).json({
+        message: "Queue day must be either today or tomorrow.",
+      });
+    }
 
-    const snapshot = await buildQueueSnapshot(tokenId);
+    await syncQueueEstimates(bookingDay.key);
 
-    return res.status(200).json(snapshot);
+    const snapshot = await buildQueueSnapshot({
+      tokenId: normalizeBodyValue(req.query?.tokenId) || null,
+      userId,
+      day: bookingDay.relativeLabel,
+    });
+
+    return res.status(200).json({
+      ...snapshot,
+      currentServingToken: snapshot.currentServing?.tokenNumber || null,
+      totalTokens: snapshot.stats.totalTokens,
+      waitingTokens: snapshot.stats.waitingTokens,
+    });
   } catch (error) {
     return next(error);
   }
@@ -83,25 +155,34 @@ async function getQueueStatus(req, res, next) {
 
 async function getBookings(req, res, next) {
   try {
+    const bookingDay = getRequestedDay(req);
     const filters = {};
-    const { status, serviceType } = req.query;
+    const requestedStatus = normalizeBodyValue(req.query?.status);
 
-    if (status && Object.values(TOKEN_STATUSES).includes(status)) {
-      filters.status = status;
+    if (!bookingDay) {
+      return res.status(400).json({
+        message: "Booking day must be either today or tomorrow.",
+      });
     }
 
-    if (serviceType && validateServiceType(serviceType)) {
-      filters.serviceType = serviceType;
+    if (requestedStatus && Object.values(TOKEN_STATUSES).includes(requestedStatus)) {
+      filters.status = requestedStatus;
     }
 
-    await syncQueueEstimates();
+    filters.bookingDayKey = bookingDay.key;
+
+    await syncQueueEstimates(bookingDay.key);
 
     const bookings = await Token.find(filters).sort({ tokenNumber: -1 }).lean();
-    const snapshot = await buildQueueSnapshot();
+    const snapshot = await buildQueueSnapshot({
+      day: bookingDay.relativeLabel,
+    });
 
     return res.status(200).json({
       bookings: bookings.map((token) => createTokenSnapshot(token, snapshot)),
       stats: snapshot.stats,
+      selectedDay: snapshot.selectedDay,
+      days: snapshot.days,
     });
   } catch (error) {
     return next(error);
@@ -110,7 +191,22 @@ async function getBookings(req, res, next) {
 
 async function nextToken(req, res, next) {
   try {
+    const bookingDay = getRequestedDay(req);
+
+    if (!bookingDay) {
+      return res.status(400).json({
+        message: "Queue day must be either today or tomorrow.",
+      });
+    }
+
+    if (!bookingDay.canServe) {
+      return res.status(400).json({
+        message: "Tomorrow bookings cannot be served today.",
+      });
+    }
+
     const currentServing = await Token.findOne({
+      bookingDayKey: bookingDay.key,
       status: TOKEN_STATUSES.SERVING,
     }).sort({ tokenNumber: 1 });
 
@@ -122,12 +218,13 @@ async function nextToken(req, res, next) {
     }
 
     const nextWaiting = await Token.findOne({
+      bookingDayKey: bookingDay.key,
       status: TOKEN_STATUSES.WAITING,
     }).sort({ tokenNumber: 1 });
 
     if (!currentServing && !nextWaiting) {
       return res.status(404).json({
-        message: "There are no waiting tokens in the queue.",
+        message: "There are no waiting tokens in the selected queue.",
       });
     }
 
@@ -138,9 +235,11 @@ async function nextToken(req, res, next) {
       await nextWaiting.save();
     }
 
-    await syncQueueEstimates();
+    await syncQueueEstimates(bookingDay.key);
 
-    const snapshot = await buildQueueSnapshot();
+    const snapshot = await buildQueueSnapshot({
+      day: bookingDay.relativeLabel,
+    });
 
     emitTokenCalled(snapshot.currentServing);
     emitQueueUpdated(snapshot);
@@ -159,12 +258,28 @@ async function nextToken(req, res, next) {
 
 async function skipToken(req, res, next) {
   try {
+    const bookingDay = getRequestedDay(req);
+
+    if (!bookingDay) {
+      return res.status(400).json({
+        message: "Queue day must be either today or tomorrow.",
+      });
+    }
+
+    if (!bookingDay.canServe) {
+      return res.status(400).json({
+        message: "Tomorrow bookings cannot be served today.",
+      });
+    }
+
     let skippedToken = await Token.findOne({
+      bookingDayKey: bookingDay.key,
       status: TOKEN_STATUSES.SERVING,
     }).sort({ tokenNumber: 1 });
 
     if (!skippedToken) {
       skippedToken = await Token.findOne({
+        bookingDayKey: bookingDay.key,
         status: TOKEN_STATUSES.WAITING,
       }).sort({ tokenNumber: 1 });
     }
@@ -182,6 +297,7 @@ async function skipToken(req, res, next) {
     await skippedToken.save();
 
     const nextWaiting = await Token.findOne({
+      bookingDayKey: bookingDay.key,
       status: TOKEN_STATUSES.WAITING,
     }).sort({ tokenNumber: 1 });
 
@@ -192,9 +308,11 @@ async function skipToken(req, res, next) {
       await nextWaiting.save();
     }
 
-    await syncQueueEstimates();
+    await syncQueueEstimates(bookingDay.key);
 
-    const snapshot = await buildQueueSnapshot();
+    const snapshot = await buildQueueSnapshot({
+      day: bookingDay.relativeLabel,
+    });
 
     emitTokenCalled(snapshot.currentServing);
     emitQueueUpdated(snapshot);
@@ -211,9 +329,19 @@ async function skipToken(req, res, next) {
 
 async function resetQueue(req, res, next) {
   try {
-    await Token.deleteMany({});
+    const bookingDay = getRequestedDay(req);
+
+    if (!bookingDay) {
+      return res.status(400).json({
+        message: "Queue day must be either today or tomorrow.",
+      });
+    }
+
+    await Token.deleteMany({
+      bookingDayKey: bookingDay.key,
+    });
     await QueueCounter.findOneAndUpdate(
-      { key: "global" },
+      { key: `queue:${bookingDay.key}` },
       { $set: { currentValue: 0 } },
       {
         new: true,
@@ -222,13 +350,15 @@ async function resetQueue(req, res, next) {
       },
     );
 
-    const snapshot = await buildQueueSnapshot();
+    const snapshot = await buildQueueSnapshot({
+      day: bookingDay.relativeLabel,
+    });
 
     emitTokenCalled(null);
     emitQueueUpdated(snapshot);
 
     return res.status(200).json({
-      message: "Queue reset successfully.",
+      message: `${bookingDay.label} queue reset successfully.`,
       snapshot,
     });
   } catch (error) {

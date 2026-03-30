@@ -1,11 +1,16 @@
 import GlassPanel from "./GlassPanel";
 import { formatMinutes, formatToken } from "../utils/formatters";
 
-export default function LiveBoard({ currentServing, nextUp, stats }) {
+export default function LiveBoard({
+  currentServing,
+  nextUp,
+  stats,
+  selectedDayInfo,
+}) {
   return (
     <GlassPanel
       eyebrow="Queue Pulse"
-      title="Live service board"
+      title={`${selectedDayInfo?.label || "Today"} live board`}
       description="The serving desk and upcoming callers update instantly as the admin advances the queue."
       className="p-0"
     >
@@ -18,7 +23,7 @@ export default function LiveBoard({ currentServing, nextUp, stats }) {
             {formatToken(currentServing?.tokenNumber)}
           </div>
           <div className="mt-4 text-base text-slate-300">
-            {currentServing?.serviceName || "Queue is ready for the first token"}
+            {selectedDayInfo?.label || "Selected"} queue
           </div>
         </div>
 
@@ -31,7 +36,7 @@ export default function LiveBoard({ currentServing, nextUp, stats }) {
               {formatToken(nextUp?.tokenNumber)}
             </div>
             <div className="mt-2 text-sm text-slate-300">
-              {nextUp?.serviceName || "No waiting tokens"}
+              {nextUp ? `Queue position #${nextUp.queuePosition || nextUp.position}` : "No waiting tokens"}
             </div>
           </div>
 

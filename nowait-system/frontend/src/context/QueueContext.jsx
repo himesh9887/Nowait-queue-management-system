@@ -1,10 +1,9 @@
 import {
   createContext,
   startTransition,
+  useCallback,
   useContext,
   useEffect,
-  useEffectEvent,
-  useRef,
   useState,
 } from "react";
 import toast from "react-hot-toast";
@@ -13,137 +12,126 @@ import { useQueueSocket } from "../hooks/useQueueSocket";
 import {
   bookToken as bookTokenRequest,
   getQueueStatus,
+  getBookings,
   nextToken as nextTokenRequest,
   resetQueue as resetQueueRequest,
   skipToken as skipTokenRequest,
 } from "../services/queueService";
 
-const TOKEN_STORAGE_KEY = "nowait-tracked-token";
 const QueueContext = createContext(null);
 
-function readTrackedTokenId() {
-  try {
-    return window.localStorage.getItem(TOKEN_STORAGE_KEY);
-  } catch (_error) {
-    return null;
-  }
-}
-
-function persistTrackedTokenId(tokenId) {
-  if (!tokenId) {
-    window.localStorage.removeItem(TOKEN_STORAGE_KEY);
-    return;
-  }
-
-  window.localStorage.setItem(TOKEN_STORAGE_KEY, tokenId);
-}
-
-function buildCompletedState(token) {
+function buildEmptyDay(relativeLabel) {
   return {
-    ...token,
-    status: "completed",
-    estimatedTime: 0,
-    estimatedWaitingTime: 0,
-    tokensAhead: 0,
-    isCurrent: false,
+    key: relativeLabel,
+    relativeLabel,
+    label: relativeLabel === "today" ? "Today" : "Tomorrow",
+    displayDate: "--",
+    fullDate: "--",
+    isToday: relativeLabel === "today",
+    canServe: relativeLabel === "today",
+    totalTokens: 0,
+    activeQueue: 0,
+    completedTokens: 0,
+    waitingTokens: 0,
+    avgServiceTime: 0,
+    queueForecast: 0,
+    currentServingToken: null,
+    nextUpToken: null,
   };
 }
 
-function findTrackedToken(snapshot, tokenId, previousToken) {
-  if (!tokenId) {
-    return null;
-  }
-
-  const directMatch =
-    snapshot.myToken?.id === tokenId
-      ? snapshot.myToken
-      : [...snapshot.queue, ...snapshot.completedQueue].find(
-          (token) => token.id === tokenId,
-        );
-
-  if (directMatch) {
-    return directMatch;
-  }
-
-  if (!previousToken) {
-    return null;
-  }
-
-  if (!snapshot.stats.totalTokens) {
-    return null;
-  }
-
-  if (
-    snapshot.currentServing &&
-    previousToken.tokenNumber < snapshot.currentServing.tokenNumber
-  ) {
-    return buildCompletedState(previousToken);
-  }
-
-  return previousToken;
+function getEmptySnapshot(selectedDay = "today") {
+  return {
+    stats: {
+      totalTokens: 0,
+      dayTokens: 0,
+      todayTokens: 0,
+      tomorrowTokens: 0,
+      totalTrackedTokens: 0,
+      activeQueue: 0,
+      completedTokens: 0,
+      waitingTokens: 0,
+      avgServiceTime: 0,
+      queueForecast: 0,
+    },
+    selectedDay: buildEmptyDay(selectedDay),
+    days: [buildEmptyDay("today"), buildEmptyDay("tomorrow")],
+    currentServing: null,
+    nextUp: null,
+    queue: [],
+    completedQueue: [],
+    userHistory: [],
+    services: [],
+    myToken: null,
+    generatedAt: null,
+  };
 }
 
 export function QueueProvider({ children }) {
-  const { token: adminToken } = useAuth();
-  const trackedTokenRef = useRef(
-    typeof window !== "undefined" ? readTrackedTokenId() : null,
-  );
+  const { token, user } = useAuth();
+  const [selectedDay, setSelectedDay] = useState("today");
   const [state, setState] = useState({
     snapshot: null,
-    myToken: null,
-    tokenId: trackedTokenRef.current,
+    bookings: [],
     booking: false,
     busyAction: null,
     loading: true,
+    bookingsLoading: false,
     refreshing: false,
-    services: [],
     socketConnected: false,
   });
 
-  const applySnapshot = useEffectEvent((snapshot, forcedTokenId) => {
-    const activeTokenId = forcedTokenId ?? trackedTokenRef.current;
-
+  const applySnapshot = useCallback((snapshot) => {
     startTransition(() => {
       setState((previous) => {
-        const nextTrackedToken = findTrackedToken(
-          snapshot,
-          activeTokenId,
-          previous.myToken,
-        );
+        const nextMyToken = user?.role === "user" ? snapshot.myToken || null : null;
+        const previousMyToken = previous.snapshot?.myToken || null;
 
         if (
-          nextTrackedToken?.status === "serving" &&
-          previous.myToken?.status !== "serving"
+          nextMyToken?.status === "serving" &&
+          previousMyToken?.status !== "serving"
         ) {
-          toast.success(`Token ${nextTrackedToken.tokenNumber} is now being served.`);
+          toast.success(`Token ${nextMyToken.tokenNumber} is now being served.`);
+        }
+
+        if (
+          previousMyToken &&
+          nextMyToken?.status === "waiting" &&
+          previousMyToken.status === "waiting" &&
+          previousMyToken.tokensAhead > 2 &&
+          nextMyToken.tokensAhead <= 2
+        ) {
+          toast(
+            nextMyToken.tokensAhead === 0
+              ? "Your turn is near. Please stay ready."
+              : `Your turn is near. ${nextMyToken.tokensAhead} people ahead.`,
+          );
+        }
+
+        if (
+          previousMyToken &&
+          nextMyToken?.status === "completed" &&
+          previousMyToken.status !== "completed"
+        ) {
+          toast.success(`Token ${nextMyToken.tokenNumber} has been completed.`);
         }
 
         return {
           ...previous,
-          snapshot,
-          myToken: nextTrackedToken,
-          tokenId: activeTokenId,
-          services: snapshot.services ?? previous.services,
+          snapshot: {
+            ...snapshot,
+            myToken: nextMyToken,
+            userHistory:
+              user?.role === "user" ? snapshot.userHistory || [] : snapshot.userHistory,
+          },
           loading: false,
           refreshing: false,
         };
       });
     });
-  });
+  }, [user?.role]);
 
-  useQueueSocket({
-    onConnectionChange: (connected) => {
-      setState((previous) => ({
-        ...previous,
-        socketConnected: connected,
-      }));
-    },
-    onQueueUpdated: (snapshot) => {
-      applySnapshot(snapshot);
-    },
-  });
-
-  async function refreshQueue({ silent = true, tokenId } = {}) {
+  const refreshQueue = useCallback(async ({ silent = true, day = selectedDay } = {}) => {
     if (!silent) {
       setState((previous) => ({
         ...previous,
@@ -153,8 +141,8 @@ export function QueueProvider({ children }) {
     }
 
     try {
-      const snapshot = await getQueueStatus(tokenId ?? trackedTokenRef.current);
-      applySnapshot(snapshot, tokenId ?? trackedTokenRef.current);
+      const snapshot = await getQueueStatus(token, day);
+      applySnapshot(snapshot);
       return snapshot;
     } catch (error) {
       setState((previous) => ({
@@ -165,24 +153,123 @@ export function QueueProvider({ children }) {
       toast.error(error.message);
       return null;
     }
-  }
+  }, [applySnapshot, selectedDay, token]);
+
+  const refreshBookings = useCallback(async (day = selectedDay) => {
+    if (user?.role !== "admin" || !token) {
+      setState((previous) => ({
+        ...previous,
+        bookings: [],
+        bookingsLoading: false,
+      }));
+      return [];
+    }
+
+    setState((previous) => ({
+      ...previous,
+      bookingsLoading: true,
+    }));
+
+    try {
+      const response = await getBookings(token, day);
+      setState((previous) => ({
+        ...previous,
+        bookings: response.bookings,
+        bookingsLoading: false,
+      }));
+      return response.bookings;
+    } catch (error) {
+      setState((previous) => ({
+        ...previous,
+        bookingsLoading: false,
+      }));
+      toast.error(error.message);
+      return [];
+    }
+  }, [selectedDay, token, user?.role]);
 
   useEffect(() => {
-    refreshQueue({ silent: false }).catch(() => null);
-  }, []);
+    let cancelled = false;
+
+    async function loadData() {
+      setState((previous) => ({
+        ...previous,
+        loading: true,
+        refreshing: Boolean(previous.snapshot),
+      }));
+
+      const snapshot = await getQueueStatus(token, selectedDay).catch((error) => {
+        if (!cancelled) {
+          toast.error(error.message);
+        }
+        return null;
+      });
+
+      if (!cancelled) {
+        applySnapshot(snapshot || getEmptySnapshot(selectedDay));
+      }
+
+      if (!cancelled && user?.role === "admin") {
+        await refreshBookings(selectedDay);
+      } else if (!cancelled) {
+        setState((previous) => ({
+          ...previous,
+          bookings: [],
+          bookingsLoading: false,
+        }));
+      }
+    }
+
+    void loadData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [applySnapshot, refreshBookings, selectedDay, token, user?.id, user?.role]);
+
+  useQueueSocket({
+    onConnectionChange: (connected) => {
+      setState((previous) => ({
+        ...previous,
+        socketConnected: connected,
+      }));
+    },
+    onQueueUpdated: () => {
+      void refreshQueue();
+
+      if (user?.role === "admin" && token) {
+        void refreshBookings();
+      }
+    },
+  });
 
   async function bookToken(payload) {
+    if (user?.role !== "user" || !token) {
+      toast.error("Please sign in as a user to book a token.");
+      return null;
+    }
+
+    const bookingDay = payload?.bookingDay || selectedDay;
+
     setState((previous) => ({
       ...previous,
       booking: true,
     }));
 
     try {
-      const response = await bookTokenRequest(payload);
-      trackedTokenRef.current = response.token.id;
-      persistTrackedTokenId(response.token.id);
-      applySnapshot(response.snapshot, response.token.id);
-      toast.success(`Token ${response.token.tokenNumber} booked successfully.`);
+      const response = await bookTokenRequest(
+        {
+          bookingDay,
+        },
+        token,
+      );
+
+      if (response.snapshot?.selectedDay?.relativeLabel) {
+        setSelectedDay(response.snapshot.selectedDay.relativeLabel);
+      }
+
+      applySnapshot(response.snapshot);
+      toast.success(response.message);
       return response.token;
     } catch (error) {
       toast.error(error.message);
@@ -196,8 +283,8 @@ export function QueueProvider({ children }) {
   }
 
   async function runAdminAction(actionName, request) {
-    if (!adminToken) {
-      toast.error("Please sign in as admin to manage the queue.");
+    if (user?.role !== "admin" || !token) {
+      toast.error("Please sign in as an admin to manage the queue.");
       return null;
     }
 
@@ -207,12 +294,13 @@ export function QueueProvider({ children }) {
     }));
 
     try {
-      const response = await request(adminToken);
+      const response = await request(token, selectedDay);
 
       if (response.snapshot) {
         applySnapshot(response.snapshot);
       }
 
+      await refreshBookings(selectedDay);
       toast.success(response.message);
       return response;
     } catch (error) {
@@ -226,52 +314,37 @@ export function QueueProvider({ children }) {
     }
   }
 
-  function clearTrackedToken() {
-    trackedTokenRef.current = null;
-    persistTrackedTokenId(null);
-    setState((previous) => ({
-      ...previous,
-      myToken: null,
-      tokenId: null,
-    }));
-  }
-
-  const snapshot = state.snapshot || {
-    stats: {
-      totalTokens: 0,
-      activeQueue: 0,
-      completedTokens: 0,
-      waitingTokens: 0,
-      avgServiceTime: 0,
-    },
-    currentServing: null,
-    nextUp: null,
-    queue: [],
-    completedQueue: [],
-    services: [],
-  };
+  const snapshot = state.snapshot || getEmptySnapshot(selectedDay);
 
   return (
     <QueueContext.Provider
       value={{
         booking: state.booking,
-        busyAction: state.busyAction,
+        bookings: state.bookings,
+        bookingsLoading: state.bookingsLoading,
         bookToken,
-        clearTrackedToken,
+        busyAction: state.busyAction,
         completedQueue: snapshot.completedQueue,
         currentServing: snapshot.currentServing,
+        daySummaries: snapshot.days || [],
+        generatedAt: snapshot.generatedAt,
         loading: state.loading,
-        myToken: state.myToken,
+        myToken: snapshot.myToken,
         nextToken: () => runAdminAction("next", nextTokenRequest),
         nextUp: snapshot.nextUp,
         queue: snapshot.queue,
+        refreshBookings: (day) => refreshBookings(day || selectedDay),
         refreshQueue,
         refreshing: state.refreshing,
         resetQueue: () => runAdminAction("reset", resetQueueRequest),
-        services: state.services,
+        selectedDay,
+        selectedDayInfo: snapshot.selectedDay,
+        setSelectedDay,
+        services: snapshot.services,
         skipToken: () => runAdminAction("skip", skipTokenRequest),
         socketConnected: state.socketConnected,
         stats: snapshot.stats,
+        userHistory: snapshot.userHistory || [],
       }}
     >
       {children}

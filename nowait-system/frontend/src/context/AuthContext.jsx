@@ -1,34 +1,58 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { getCurrentAdmin, loginAdmin } from "../services/authService";
+import {
+  getCurrentUser,
+  login as loginRequest,
+  register as registerRequest,
+} from "../services/authService";
 
-const STORAGE_KEY = "nowait-admin-session";
+const STORAGE_KEY = "nowait-auth-session";
+const REMEMBER_KEY = "nowait-auth-remember";
 const AuthContext = createContext(null);
 
 function readStoredSession() {
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : { token: null, admin: null };
-  } catch (_error) {
-    return { token: null, admin: null };
+    const rememberedValue = window.localStorage.getItem(REMEMBER_KEY);
+    const remembered = rememberedValue === null ? true : rememberedValue === "true";
+    const storage = remembered ? window.localStorage : window.sessionStorage;
+    const raw = storage.getItem(STORAGE_KEY);
+    const fallbackRaw =
+      rememberedValue === null ? window.localStorage.getItem(STORAGE_KEY) : null;
+
+    return raw || fallbackRaw
+      ? {
+          ...JSON.parse(raw || fallbackRaw),
+          remember: remembered,
+        }
+      : { token: null, user: null, remember: remembered };
+  } catch {
+    return { token: null, user: null, remember: true };
   }
 }
 
-function persistSession(session) {
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+function persistSession(session, remember = true) {
+  const storage = remember ? window.localStorage : window.sessionStorage;
+  const fallbackStorage = remember ? window.sessionStorage : window.localStorage;
+
+  fallbackStorage.removeItem(STORAGE_KEY);
+  window.localStorage.setItem(REMEMBER_KEY, JSON.stringify(remember));
+  storage.setItem(STORAGE_KEY, JSON.stringify(session));
 }
 
 function clearStoredSession() {
   window.localStorage.removeItem(STORAGE_KEY);
+  window.localStorage.removeItem(REMEMBER_KEY);
+  window.sessionStorage.removeItem(STORAGE_KEY);
 }
 
 export function AuthProvider({ children }) {
   const storedSession =
     typeof window !== "undefined"
       ? readStoredSession()
-      : { token: null, admin: null };
+      : { token: null, user: null };
   const [session, setSession] = useState({
     token: storedSession.token,
-    admin: storedSession.admin,
+    user: storedSession.user,
+    remember: storedSession.remember ?? true,
     loading: Boolean(storedSession.token),
   });
 
@@ -44,23 +68,27 @@ export function AuthProvider({ children }) {
       }
 
       try {
-        const { admin } = await getCurrentAdmin(session.token);
+        const { user } = await getCurrentUser(session.token);
 
         if (!cancelled) {
-          persistSession({ token: session.token, admin });
+          persistSession(
+            { token: session.token, user },
+            session.remember ?? true,
+          );
           setSession({
             token: session.token,
-            admin,
+            user,
+            remember: session.remember ?? true,
             loading: false,
           });
         }
-      } catch (_error) {
+      } catch {
         clearStoredSession();
 
         if (!cancelled) {
           setSession({
             token: null,
-            admin: null,
+            user: null,
             loading: false,
           });
         }
@@ -72,27 +100,37 @@ export function AuthProvider({ children }) {
     return () => {
       cancelled = true;
     };
-  }, [session.token]);
+  }, [session.remember, session.token]);
 
-  async function login(credentials) {
-    const payload = await loginAdmin(credentials);
-    persistSession({
-      token: payload.token,
-      admin: payload.admin,
-    });
+  async function login(credentials, options = {}) {
+    const payload = await loginRequest(credentials);
+    const remember = options.remember ?? true;
+
+    persistSession(
+      {
+        token: payload.token,
+        user: payload.user,
+      },
+      remember,
+    );
     setSession({
       token: payload.token,
-      admin: payload.admin,
+      user: payload.user,
+      remember,
       loading: false,
     });
     return payload;
+  }
+
+  async function register(payload) {
+    return registerRequest(payload);
   }
 
   function logout() {
     clearStoredSession();
     setSession({
       token: null,
-      admin: null,
+      user: null,
       loading: false,
     });
   }
@@ -100,12 +138,16 @@ export function AuthProvider({ children }) {
   return (
     <AuthContext.Provider
       value={{
-        admin: session.admin,
+        isAdmin: session.user?.role === "admin",
         isAuthenticated: Boolean(session.token),
+        isUser: session.user?.role === "user",
         loading: session.loading,
         login,
         logout,
+        rememberSession: session.remember ?? true,
+        register,
         token: session.token,
+        user: session.user,
       }}
     >
       {children}

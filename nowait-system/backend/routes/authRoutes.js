@@ -1,14 +1,16 @@
 const express = require("express");
 
 const {
-  getCurrentAdmin,
-  loginAdmin,
+  getCurrentUser,
+  login,
+  register,
 } = require("../controllers/authController");
-const { requireAdmin } = require("../middleware/authMiddleware");
+const { authenticate } = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
-router.post("/login", loginAdmin);
-router.get("/me", requireAdmin, getCurrentAdmin);
+router.post("/register", register);
+router.post("/login", login);
+router.get("/me", authenticate, getCurrentUser);
 
 module.exports = router;

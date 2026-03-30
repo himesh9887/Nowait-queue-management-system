@@ -1,15 +1,35 @@
 const mongoose = require("mongoose");
 
-const { SERVICE_CATALOG, TOKEN_STATUSES } = require("../config/constants");
+const { TOKEN_STATUSES } = require("../config/constants");
 
 const tokenSchema = new mongoose.Schema(
   {
+    userId: {
+      type: String,
+      required: true,
+      trim: true,
+      index: true,
+    },
+    userDisplayName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
     tokenNumber: {
       type: Number,
       required: true,
-      unique: true,
-      index: true,
       min: 1,
+    },
+    bookingDate: {
+      type: Date,
+      required: true,
+      index: true,
+    },
+    bookingDayKey: {
+      type: String,
+      required: true,
+      trim: true,
+      index: true,
     },
     status: {
       type: String,
@@ -17,16 +37,6 @@ const tokenSchema = new mongoose.Schema(
       enum: Object.values(TOKEN_STATUSES),
       default: TOKEN_STATUSES.WAITING,
       index: true,
-    },
-    serviceType: {
-      type: String,
-      required: true,
-      enum: SERVICE_CATALOG.map((service) => service.id),
-    },
-    timeSlot: {
-      type: String,
-      default: null,
-      trim: true,
     },
     estimatedTime: {
       type: Number,
@@ -51,5 +61,8 @@ const tokenSchema = new mongoose.Schema(
     timestamps: true,
   },
 );
+
+tokenSchema.index({ bookingDayKey: 1, tokenNumber: 1 }, { unique: true });
+tokenSchema.index({ userId: 1, bookingDayKey: 1, status: 1 });
 
 module.exports = mongoose.model("Token", tokenSchema);

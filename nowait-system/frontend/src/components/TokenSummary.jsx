@@ -6,6 +6,7 @@ export default function TokenSummary({
   currentServing,
   onClear,
   socketConnected,
+  showClearAction = true,
 }) {
   return (
     <GlassPanel
@@ -72,13 +73,15 @@ export default function TokenSummary({
                 {myToken.timeSlot || "Instant"}
               </div>
             </div>
-            <button
-              type="button"
-              className="secondary-button sm:col-span-2"
-              onClick={onClear}
-            >
-              Clear tracked token
-            </button>
+            {showClearAction && onClear ? (
+              <button
+                type="button"
+                className="secondary-button sm:col-span-2"
+                onClick={onClear}
+              >
+                Clear tracked token
+              </button>
+            ) : null}
           </div>
         </div>
       ) : (

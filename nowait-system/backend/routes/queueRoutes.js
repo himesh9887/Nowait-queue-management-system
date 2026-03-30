@@ -8,15 +8,21 @@ const {
   resetQueue,
   skipToken,
 } = require("../controllers/queueController");
-const { requireAdmin } = require("../middleware/authMiddleware");
+const {
+  authorizeRoles,
+  optionalAuth,
+  authenticate,
+} = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
-router.post("/book-token", bookToken);
-router.get("/queue-status", getQueueStatus);
-router.get("/bookings", requireAdmin, getBookings);
-router.post("/next-token", requireAdmin, nextToken);
-router.post("/skip-token", requireAdmin, skipToken);
-router.post("/reset", requireAdmin, resetQueue);
+router.post("/book-token", optionalAuth, bookToken);
+router.get("/queue", optionalAuth, getQueueStatus);
+router.get("/queue-status", optionalAuth, getQueueStatus);
+router.get("/bookings", authenticate, authorizeRoles("admin"), getBookings);
+router.post("/next-token", authenticate, authorizeRoles("admin"), nextToken);
+router.post("/skip-token", authenticate, authorizeRoles("admin"), skipToken);
+router.post("/reset", authenticate, authorizeRoles("admin"), resetQueue);
+router.post("/reset-queue", authenticate, authorizeRoles("admin"), resetQueue);
 
 module.exports = router;

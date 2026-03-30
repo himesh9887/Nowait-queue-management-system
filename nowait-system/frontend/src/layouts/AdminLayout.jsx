@@ -5,7 +5,7 @@ import { useQueue } from "../context/QueueContext";
 
 const navItems = [
   {
-    to: "/admin",
+    to: "/admin-dashboard",
     label: "Operations",
     description: "Advance, skip, and monitor the queue in real time.",
   },
@@ -15,14 +15,14 @@ const navItems = [
     description: "Open the large public token display screen.",
   },
   {
-    to: "/",
-    label: "User booking",
-    description: "Return to the public booking and tracking experience.",
+    to: "/login",
+    label: "Sign in",
+    description: "Return to the authentication screen.",
   },
 ];
 
 export default function AdminLayout() {
-  const { admin, logout } = useAuth();
+  const { logout, user } = useAuth();
   const { socketConnected } = useQueue();
 
   return (
@@ -33,7 +33,10 @@ export default function AdminLayout() {
           footer={
             <div className="rounded-3xl border border-white/10 bg-slate-950/[0.6] p-4">
               <div className="text-sm text-slate-300">
-                Signed in as <span className="font-semibold text-white">{admin?.username}</span>
+                Signed in as <span className="font-semibold text-white">{user?.displayName}</span>
+              </div>
+              <div className="mt-2 text-xs uppercase tracking-[0.24em] text-slate-400">
+                {user?.role}
               </div>
               <div className="mt-3 text-xs uppercase tracking-[0.24em] text-cyan-200/80">
                 {socketConnected ? "Live system online" : "Socket reconnecting"}

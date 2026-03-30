@@ -4,6 +4,11 @@ const { buildQueueSnapshot } = require("../utils/queueMetrics");
 
 let io;
 
+function emitQueueSnapshot(target, snapshot) {
+  target.emit("queueUpdated", snapshot);
+  target.emit("queueUpdate", snapshot);
+}
+
 function initializeSocket(server) {
   io = new Server(server, {
     cors: {
@@ -13,9 +18,24 @@ function initializeSocket(server) {
   });
 
   io.on("connection", async (socket) => {
+    async function sendSnapshot() {
+      try {
+        const snapshot = await buildQueueSnapshot();
+        emitQueueSnapshot(socket, snapshot);
+      } catch (_error) {
+        socket.emit("queueError", {
+          message: "Unable to load the queue snapshot right now.",
+        });
+      }
+    }
+
+    socket.on("getToken", () => {
+      void sendSnapshot();
+    });
+
     try {
       const snapshot = await buildQueueSnapshot();
-      socket.emit("queueUpdated", snapshot);
+      emitQueueSnapshot(socket, snapshot);
     } catch (_error) {
       socket.emit("queueError", {
         message: "Unable to load the queue snapshot right now.",
@@ -28,13 +48,14 @@ function initializeSocket(server) {
 
 function emitQueueUpdated(snapshot) {
   if (io) {
-    io.emit("queueUpdated", snapshot);
+    emitQueueSnapshot(io, snapshot);
   }
 }
 
 function emitTokenBooked(token) {
   if (io) {
     io.emit("tokenBooked", token);
+    io.emit("tokenGenerated", token);
   }
 }
 

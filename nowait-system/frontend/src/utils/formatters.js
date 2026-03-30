@@ -33,3 +33,27 @@ export function formatDateTime(date) {
     day: "numeric",
   }).format(new Date(date));
 }
+
+export function formatLongDate(date) {
+  if (!date) {
+    return "--";
+  }
+
+  return new Intl.DateTimeFormat(undefined, {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(new Date(date));
+}
+
+export function formatShortDate(date) {
+  if (!date) {
+    return "--";
+  }
+
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+  }).format(new Date(date));
+}

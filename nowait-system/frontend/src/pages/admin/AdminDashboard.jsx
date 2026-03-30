@@ -1,67 +1,43 @@
-import { useDeferredValue, useEffect, useState } from "react";
-import toast from "react-hot-toast";
+import { useDeferredValue, useState } from "react";
 import GlassPanel from "../../components/GlassPanel";
 import LiveBoard from "../../components/LiveBoard";
 import LoadingScreen from "../../components/LoadingScreen";
 import QueueTable from "../../components/QueueTable";
 import StatCard from "../../components/StatCard";
-import { useAuth } from "../../context/AuthContext";
+import StatusBadge from "../../components/StatusBadge";
+import {
+  formatDateTime,
+  formatMinutes,
+  formatShortDate,
+  formatToken,
+} from "../../utils/formatters";
 import { useQueue } from "../../context/QueueContext";
-import { getBookings } from "../../services/queueService";
 
 export default function AdminDashboard() {
-  const { token } = useAuth();
   const {
+    bookings,
+    bookingsLoading,
     busyAction,
     currentServing,
+    daySummaries,
     loading,
     nextToken,
     nextUp,
     queue,
+    refreshBookings,
     refreshQueue,
     resetQueue,
+    selectedDay,
+    selectedDayInfo,
+    setSelectedDay,
     skipToken,
     socketConnected,
     stats,
   } = useQueue();
-  const [bookings, setBookings] = useState([]);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
-  const [bookingsLoading, setBookingsLoading] = useState(true);
   const deferredSearch = useDeferredValue(search);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadBookings() {
-      if (!token) {
-        return;
-      }
-
-      try {
-        setBookingsLoading(true);
-        const response = await getBookings(token);
-
-        if (!cancelled) {
-          setBookings(response.bookings);
-        }
-      } catch (error) {
-        if (!cancelled) {
-          toast.error(error.message);
-        }
-      } finally {
-        if (!cancelled) {
-          setBookingsLoading(false);
-        }
-      }
-    }
-
-    void loadBookings();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [token, stats.totalTokens, stats.completedTokens, currentServing?.tokenNumber]);
+  const canServeSelectedDay = selectedDayInfo?.canServe;
 
   if (loading) {
     return <LoadingScreen label="Loading admin operations..." />;
@@ -70,7 +46,9 @@ export default function AdminDashboard() {
   const filteredBookings = bookings.filter((booking) => {
     const matchesFilter = filter === "all" ? true : booking.status === filter;
     const matchesSearch = deferredSearch
-      ? `${booking.tokenNumber} ${booking.serviceName} ${booking.timeSlot || ""}`
+      ? `${booking.tokenNumber} ${booking.bookedBy || ""} ${
+          booking.bookingLabel || ""
+        } ${booking.bookingDisplayDate || ""}`
           .toLowerCase()
           .includes(deferredSearch.toLowerCase())
       : true;
@@ -80,7 +58,7 @@ export default function AdminDashboard() {
 
   async function handleResetQueue() {
     const shouldReset = window.confirm(
-      "Reset the full queue and remove all tokens?",
+      `Reset the ${selectedDayInfo?.label?.toLowerCase() || "selected"} queue and remove all tokens?`,
     );
 
     if (shouldReset) {
@@ -93,13 +71,13 @@ export default function AdminDashboard() {
       <GlassPanel
         eyebrow="Operations Center"
         title="Run the queue with live visibility"
-        description="Advance callers, skip inactive tokens, and monitor every booking from a single responsive dashboard."
+        description="Advance callers, protect tomorrow from early serving, and monitor every booking from a single responsive dashboard."
       >
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <StatCard
-            label="Total tokens"
+            label={`${selectedDayInfo?.label || "Selected"} tokens`}
             value={stats.totalTokens}
-            description="All bookings created today"
+            description="All bookings in the active queue day"
           />
           <StatCard
             label="Active queue"
@@ -117,19 +95,73 @@ export default function AdminDashboard() {
             description="Real-time socket connection"
           />
         </div>
+
+        <div className="mt-6 grid gap-3 sm:grid-cols-2">
+          {daySummaries.map((day) => {
+            const active = day.relativeLabel === selectedDay;
+
+            return (
+              <button
+                key={day.key}
+                type="button"
+                onClick={() => setSelectedDay(day.relativeLabel)}
+                className={`rounded-[1.5rem] border p-4 text-left transition ${
+                  active
+                    ? "border-cyan-400/35 bg-cyan-400/[0.12] shadow-[0_18px_40px_rgba(34,211,238,0.12)]"
+                    : "border-white/10 bg-white/[0.04] hover:border-white/20 hover:bg-white/[0.06]"
+                }`}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="text-lg font-semibold text-white">{day.label}</div>
+                  <div className="text-xs uppercase tracking-[0.24em] text-slate-400">
+                    {day.displayDate}
+                  </div>
+                </div>
+                <div className="mt-4 grid grid-cols-3 gap-3 text-sm text-slate-300">
+                  <div>
+                    <div className="user-dashboard-label">Waiting</div>
+                    <div className="mt-1 text-xl font-semibold text-white">
+                      {day.waitingTokens}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="user-dashboard-label">Serving</div>
+                    <div className="mt-1 text-xl font-semibold text-white">
+                      {formatToken(day.currentServingToken)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="user-dashboard-label">Forecast</div>
+                    <div className="mt-1 text-xl font-semibold text-white">
+                      {formatMinutes(day.queueForecast)}
+                    </div>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </GlassPanel>
+
+      {!canServeSelectedDay ? (
+        <GlassPanel
+          eyebrow="Future Queue"
+          title="Tomorrow is visible but locked"
+          description="Tomorrow bookings are intentionally isolated. Admins can review the queue now, but service actions stay disabled until tomorrow begins."
+        />
+      ) : null}
 
       <div className="grid gap-6 2xl:grid-cols-[1.1fr_0.9fr]">
         <GlassPanel
           eyebrow="Controls"
-          title="Queue actions"
-          description="Use these controls to keep the service line moving."
+          title={`${selectedDayInfo?.label || "Selected"} queue actions`}
+          description="Use these controls to keep the service line moving safely."
         >
           <div className="grid gap-4 md:grid-cols-2">
             <button
               type="button"
               className="primary-button h-12"
-              disabled={busyAction === "next"}
+              disabled={busyAction === "next" || !canServeSelectedDay}
               onClick={nextToken}
             >
               {busyAction === "next" ? "Calling next..." : "Next token"}
@@ -137,7 +169,7 @@ export default function AdminDashboard() {
             <button
               type="button"
               className="secondary-button h-12"
-              disabled={busyAction === "skip"}
+              disabled={busyAction === "skip" || !canServeSelectedDay}
               onClick={skipToken}
             >
               {busyAction === "skip" ? "Skipping token..." : "Skip token"}
@@ -145,7 +177,10 @@ export default function AdminDashboard() {
             <button
               type="button"
               className="secondary-button h-12"
-              onClick={() => refreshQueue({ silent: false })}
+              onClick={() => {
+                void refreshQueue({ silent: false });
+                void refreshBookings(selectedDay);
+              }}
             >
               Refresh dashboard
             </button>
@@ -164,26 +199,28 @@ export default function AdminDashboard() {
           currentServing={currentServing}
           nextUp={nextUp}
           stats={stats}
+          selectedDayInfo={selectedDayInfo}
         />
       </div>
 
       <QueueTable
-        title="Active queue"
+        title={`${selectedDayInfo?.label || "Selected"} active queue`}
         description="Serving and waiting tokens update automatically as bookings are created or the queue advances."
         tokens={queue}
-        emptyMessage="No active tokens in the queue right now."
+        emptyMessage={`No active tokens in the ${selectedDayInfo?.label?.toLowerCase() || "selected"} queue right now.`}
+        showBookedBy
       />
 
       <GlassPanel
         eyebrow="Manage Bookings"
-        title="All bookings"
-        description="Filter and search the booking ledger to review queue activity."
+        title="Full token ledger"
+        description="Search and filter every token in the selected day while keeping the currently serving entry easy to spot."
         className="p-0"
       >
         <div className="grid gap-4 border-b border-white/10 px-6 py-6 sm:grid-cols-[1fr_auto] sm:px-8">
           <input
             className="soft-input"
-            placeholder="Search by token, service, or slot"
+            placeholder="Search by token, user, or booking day"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
@@ -212,27 +249,46 @@ export default function AdminDashboard() {
               <thead className="border-b border-white/10 bg-white/[0.04] text-xs uppercase tracking-[0.24em] text-slate-400">
                 <tr>
                   <th className="px-6 py-4 sm:px-8">Token</th>
-                  <th className="px-6 py-4 sm:px-8">Service</th>
-                  <th className="px-6 py-4 sm:px-8">Slot</th>
+                  <th className="px-6 py-4 sm:px-8">Booked By</th>
+                  <th className="px-6 py-4 sm:px-8">Booking Day</th>
                   <th className="px-6 py-4 sm:px-8">Status</th>
-                  <th className="px-6 py-4 sm:px-8">Ahead</th>
+                  <th className="px-6 py-4 sm:px-8">Position</th>
                   <th className="px-6 py-4 sm:px-8">ETA</th>
+                  <th className="px-6 py-4 sm:px-8">Created</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredBookings.map((booking) => (
                   <tr
                     key={booking.id}
-                    className="border-b border-white/[0.06] text-sm text-slate-200 last:border-b-0"
+                    className={`border-b border-white/[0.06] text-sm text-slate-200 last:border-b-0 ${
+                      booking.isCurrent ? "bg-emerald-400/[0.08]" : ""
+                    }`}
                   >
                     <td className="px-6 py-4 font-semibold text-white sm:px-8">
-                      {booking.tokenNumber}
+                      {formatToken(booking.tokenNumber)}
                     </td>
-                    <td className="px-6 py-4 sm:px-8">{booking.serviceName}</td>
-                    <td className="px-6 py-4 sm:px-8">{booking.timeSlot || "Instant"}</td>
-                    <td className="px-6 py-4 capitalize sm:px-8">{booking.status}</td>
-                    <td className="px-6 py-4 sm:px-8">{booking.tokensAhead}</td>
-                    <td className="px-6 py-4 sm:px-8">{booking.estimatedWaitingTime} min</td>
+                    <td className="px-6 py-4 sm:px-8">{booking.bookedBy}</td>
+                    <td className="px-6 py-4 sm:px-8">
+                      <div className="font-medium text-white">
+                        {booking.bookingLabel || "Booked"}
+                      </div>
+                      <div className="mt-1 text-xs uppercase tracking-[0.2em] text-slate-500">
+                        {formatShortDate(booking.bookingDate)}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 sm:px-8">
+                      <StatusBadge status={booking.status} skipped={booking.wasSkipped} />
+                    </td>
+                    <td className="px-6 py-4 sm:px-8">
+                      {booking.queuePosition || booking.position || "-"}
+                    </td>
+                    <td className="px-6 py-4 sm:px-8">
+                      {formatMinutes(booking.estimatedWaitingTime)}
+                    </td>
+                    <td className="px-6 py-4 text-slate-400 sm:px-8">
+                      {formatDateTime(booking.createdAt)}
+                    </td>
                   </tr>
                 ))}
               </tbody>

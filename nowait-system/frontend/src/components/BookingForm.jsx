@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import GlassPanel from "./GlassPanel";
 
 export default function BookingForm({
@@ -6,21 +6,18 @@ export default function BookingForm({
   onBookToken,
   booking,
   socketConnected,
+  hasActiveToken = false,
 }) {
   const [serviceType, setServiceType] = useState("");
   const [timeSlot, setTimeSlot] = useState("");
 
-  useEffect(() => {
-    if (!serviceType && services.length) {
-      setServiceType(services[0].id);
-    }
-  }, [serviceType, services]);
+  const activeServiceType = serviceType || services[0]?.id || "";
 
   async function handleSubmit(event) {
     event.preventDefault();
 
     const bookedToken = await onBookToken({
-      serviceType,
+      serviceType: activeServiceType,
       timeSlot,
     });
 
@@ -41,7 +38,7 @@ export default function BookingForm({
           <span className="text-sm font-medium text-slate-200">Choose a service</span>
           <div className="grid gap-3 md:grid-cols-3">
             {services.map((service) => {
-              const active = serviceType === service.id;
+              const active = activeServiceType === service.id;
 
               return (
                 <button
@@ -88,9 +85,13 @@ export default function BookingForm({
         <button
           type="submit"
           className="primary-button h-12 w-full"
-          disabled={booking || !serviceType}
+          disabled={booking || !activeServiceType || hasActiveToken}
         >
-          {booking ? "Booking token..." : "Generate my token"}
+          {booking
+            ? "Booking token..."
+            : hasActiveToken
+              ? "Active token already booked"
+              : "Book token"}
         </button>
       </form>
     </GlassPanel>
