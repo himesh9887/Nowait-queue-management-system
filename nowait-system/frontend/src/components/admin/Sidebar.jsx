@@ -72,7 +72,7 @@ function SidebarSurface({
         ) : null}
       </div>
 
-      <div className="mt-6 rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-4">
+      <div className="mt-6 rounded-[1.75rem] border border-white/10 bg-white/4 p-4">
         <div className="flex items-center justify-between gap-3">
           <div>
             <div className="text-sm font-medium text-slate-200">Realtime sync</div>
@@ -108,7 +108,7 @@ function SidebarSurface({
                 className={`flex h-11 w-11 items-center justify-center rounded-2xl border ${
                   isActive
                     ? "border-cyan-300/25 bg-cyan-400/[0.16] text-cyan-100"
-                    : "border-white/10 bg-white/[0.04] text-slate-300"
+                    : "border-white/10 bg-white/4 text-slate-300"
                 }`}
               >
                 <Icon />
@@ -131,7 +131,7 @@ function SidebarSurface({
         })}
       </nav>
 
-      <div className="mt-6 space-y-3 rounded-[1.75rem] border border-white/10 bg-slate-950/[0.58] p-4">
+      <div className="mt-6 space-y-3 rounded-[1.75rem] border border-white/10 bg-slate-950/58 p-4">
         <div className="flex items-center gap-2 text-sm font-medium text-slate-200">
           <SparkIcon className="h-4 w-4 text-cyan-200" />
           Queue by day
@@ -140,7 +140,7 @@ function SidebarSurface({
         {daySummaries.map((day) => (
           <div
             key={day.key}
-            className="rounded-[1.35rem] border border-white/8 bg-white/[0.03] p-3"
+            className="rounded-[1.35rem] border border-white/8 bg-white/3 p-3"
           >
             <div className="flex items-center justify-between gap-3">
               <div>
@@ -149,7 +149,7 @@ function SidebarSurface({
                   {day.displayDate}
                 </div>
               </div>
-              <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-medium text-slate-300">
+              <div className="rounded-full border border-white/10 bg-white/4 px-3 py-1 text-xs font-medium text-slate-300">
                 {day.waitingTokens} waiting
               </div>
             </div>
@@ -158,7 +158,7 @@ function SidebarSurface({
       </div>
 
       <div className="mt-auto space-y-4 pt-6">
-        <div className="rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-4">
+        <div className="rounded-[1.75rem] border border-white/10 bg-white/4 p-4">
           <div className="text-sm font-medium text-slate-200">
             {user?.displayName || "Admin"}
           </div>

@@ -45,7 +45,7 @@ export default function Button({
       {...props}
     >
       {loading ? <Spinner /> : null}
-      <span>{children}</span>
+      {children}
     </button>
   );
 }

@@ -24,9 +24,9 @@ function ActionButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`admin-action-button flex min-h-[124px] flex-col items-start justify-between rounded-[1.6rem] border p-4 text-left transition duration-300 disabled:cursor-not-allowed disabled:opacity-60 ${toneClassName}`}
+      className={`admin-action-button flex min-h-31 flex-col items-start justify-between rounded-[1.6rem] border p-4 text-left transition duration-300 disabled:cursor-not-allowed disabled:opacity-60 ${toneClassName}`}
     >
-      <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.08] text-white">
+      <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/8 text-white">
         <IconComponent className="h-5 w-5" />
       </div>
       <div>
@@ -112,7 +112,7 @@ export default function ControlPanel({
       </div>
 
       {!canServeSelectedDay ? (
-        <div className="mt-6 rounded-[1.75rem] border border-amber-300/18 bg-amber-400/[0.08] px-5 py-4 text-sm leading-6 text-amber-100">
+        <div className="mt-6 rounded-[1.75rem] border border-amber-300/18 bg-amber-400/8 px-5 py-4 text-sm leading-6 text-amber-100">
           {selectedDayInfo?.label || "This queue"} is visible for planning, but
           actions stay locked until that day becomes active.
         </div>
@@ -143,7 +143,7 @@ export default function ControlPanel({
           icon={SkipIcon}
           onClick={onSkip}
           disabled={!canAdvanceQueue}
-          toneClassName="border-amber-300/18 bg-amber-400/[0.08] hover:-translate-y-1 hover:border-amber-300/24 hover:bg-amber-400/[0.13]"
+          toneClassName="border-amber-300/18 bg-amber-400/8 hover:-translate-y-1 hover:border-amber-300/24 hover:bg-amber-400/[0.13]"
           description="Mark the active token as skipped, then advance service to the next waiting customer."
         >
           {busyAction === "skip" ? "Skipping token..." : "Skip Token"}
@@ -160,20 +160,20 @@ export default function ControlPanel({
         </ActionButton>
       </div>
 
-      <div className="mt-6 rounded-[1.75rem] border border-white/10 bg-slate-950/[0.62] p-5">
+      <div className="mt-6 rounded-[1.75rem] border border-white/10 bg-slate-950/62 p-5">
         <div className="text-xs uppercase tracking-[0.24em] text-slate-500">
           Queue logic
         </div>
         <div className="mt-3 grid gap-3 text-sm leading-6 text-slate-300 sm:grid-cols-3">
-          <div className="rounded-[1.35rem] border border-white/8 bg-white/[0.03] p-4">
+          <div className="rounded-[1.35rem] border border-white/8 bg-white/3 p-4">
             Start Serving manually begins the queue and guarantees only one serving
             token at a time.
           </div>
-          <div className="rounded-[1.35rem] border border-white/8 bg-white/[0.03] p-4">
+          <div className="rounded-[1.35rem] border border-white/8 bg-white/3 p-4">
             Next token completes the current call before promoting the next waiting
             entry to serving.
           </div>
-          <div className="rounded-[1.35rem] border border-white/8 bg-white/[0.03] p-4">
+          <div className="rounded-[1.35rem] border border-white/8 bg-white/3 p-4">
             Skip and reset keep the queue sequential, preserve day separation, and
             never create new tokens from admin.
           </div>

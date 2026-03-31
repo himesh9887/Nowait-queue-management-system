@@ -119,7 +119,7 @@ export default function PwaInstallPrompt() {
     <div className="pointer-events-none fixed inset-x-3 bottom-3 z-[75] flex justify-center sm:bottom-4 sm:inset-x-4 sm:justify-end">
       <section className="pointer-events-auto w-full max-w-xl rounded-[1.9rem] border border-white/10 bg-[linear-gradient(135deg,rgba(6,13,25,0.94),rgba(12,21,43,0.94),rgba(37,18,76,0.82))] p-4 shadow-[0_28px_60px_rgba(7,12,25,0.55)] backdrop-blur-2xl">
         <div className="flex items-start gap-3">
-          <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] text-sky-100">
+          <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/6 text-sky-100">
             <SparkWaveIcon className="h-6 w-6" />
           </div>
 
@@ -137,7 +137,7 @@ export default function PwaInstallPrompt() {
               <button
                 type="button"
                 onClick={handleDismiss}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-slate-300 transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/4 text-slate-300 transition hover:border-white/20 hover:bg-white/8 hover:text-white"
                 aria-label="Dismiss install prompt"
               >
                 <CloseIcon className="h-4 w-4" />
@@ -162,7 +162,7 @@ export default function PwaInstallPrompt() {
               <button
                 type="button"
                 onClick={handleDismiss}
-                className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-slate-200 transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
+                className="inline-flex items-center rounded-full border border-white/10 bg-white/4 px-4 py-2.5 text-sm font-medium text-slate-200 transition hover:border-white/20 hover:bg-white/8 hover:text-white"
               >
                 Maybe later
               </button>

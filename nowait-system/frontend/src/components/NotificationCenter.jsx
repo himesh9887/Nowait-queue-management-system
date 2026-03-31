@@ -71,7 +71,7 @@ export default function NotificationCenter() {
           className={`queue-notification-card queue-notification-enter pointer-events-auto ${getToneClassName(notification.type)}`}
         >
           <div className="flex items-start gap-3">
-            <div className="mt-0.5 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] text-sky-100">
+            <div className="mt-0.5 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/6 text-sky-100">
               <BellIcon className="h-5 w-5" />
             </div>
 
@@ -89,7 +89,7 @@ export default function NotificationCenter() {
                 <button
                   type="button"
                   onClick={() => dismissNotification(notification.id)}
-                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-slate-300 transition hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/4 text-slate-300 transition hover:border-white/20 hover:bg-white/8 hover:text-white"
                   aria-label="Dismiss notification"
                 >
                   <CloseIcon className="h-4 w-4" />
@@ -97,7 +97,7 @@ export default function NotificationCenter() {
               </div>
 
               {notification.detail ? (
-                <div className="mt-3 rounded-[1rem] border border-white/8 bg-white/[0.03] px-3 py-2 text-sm text-slate-300">
+                <div className="mt-3 rounded-2xl border border-white/8 bg-white/3 px-3 py-2 text-sm text-slate-300">
                   {notification.detail}
                 </div>
               ) : null}

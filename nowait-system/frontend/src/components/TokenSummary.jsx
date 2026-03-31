@@ -31,7 +31,7 @@ export default function TokenSummary({
             </div>
 
             <div className="mt-8 flex flex-wrap gap-3">
-              <div className="rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-sm text-slate-200">
+              <div className="rounded-full border border-white/10 bg-white/6 px-4 py-2 text-sm text-slate-200">
                 {myToken.status}
               </div>
               <div className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-sm text-cyan-100">
@@ -85,7 +85,7 @@ export default function TokenSummary({
           </div>
         </div>
       ) : (
-        <div className="rounded-[1.75rem] border border-dashed border-white/[0.12] bg-slate-950/[0.45] px-6 py-12 text-center text-sm text-slate-400 sm:px-8">
+        <div className="rounded-[1.75rem] border border-dashed border-white/12 bg-slate-950/45 px-6 py-12 text-center text-sm text-slate-400 sm:px-8">
           Once you book a token, your live progress card will appear here.
         </div>
       )}

@@ -109,12 +109,12 @@ export default function AdminDashboard() {
       ? {
           title: "Realtime queue sync is active",
           detail: "Socket updates are flowing normally.",
-          toneClassName: "border-emerald-300/18 bg-emerald-400/[0.08] text-emerald-50",
+          toneClassName: "border-emerald-300/18 bg-emerald-400/8 text-emerald-50",
         }
       : {
           title: "Realtime sync is reconnecting",
           detail: "The dashboard will refresh automatically once the socket recovers.",
-          toneClassName: "border-amber-300/18 bg-amber-400/[0.08] text-amber-50",
+          toneClassName: "border-amber-300/18 bg-amber-400/8 text-amber-50",
         },
     !canServeSelectedDay
       ? {
@@ -138,7 +138,7 @@ export default function AdminDashboard() {
       : {
           title: "Queue is ready for the next call",
           detail: "No token is currently marked as serving and no waiting entries are available.",
-          toneClassName: "border-white/10 bg-white/[0.04] text-slate-100",
+          toneClassName: "border-white/10 bg-white/4 text-slate-100",
         },
   ].filter(Boolean);
   const statsCards = [
@@ -259,7 +259,7 @@ export default function AdminDashboard() {
 
   return (
     <>
-      <div className="mx-auto max-w-[1720px]">
+      <div className="mx-auto max-w-430">
         <div className="grid gap-6 xl:grid-cols-[310px_minmax(0,1fr)]">
           <Sidebar
             activeSection={activeSection}
@@ -392,8 +392,8 @@ export default function AdminDashboard() {
                         onClick={() => setSelectedDay(day.relativeLabel)}
                         className={`rounded-[1.7rem] border p-4 text-left transition duration-300 ${
                           isActive
-                            ? "border-cyan-300/24 bg-cyan-400/[0.12] shadow-[0_18px_48px_rgba(34,211,238,0.16)]"
-                            : "border-white/10 bg-white/[0.04] hover:-translate-y-0.5 hover:border-white/16 hover:bg-white/[0.06]"
+                            ? "border-cyan-300/24 bg-cyan-400/12 shadow-[0_18px_48px_rgba(34,211,238,0.16)]"
+                            : "border-white/10 bg-white/4 hover:-translate-y-0.5 hover:border-white/16 hover:bg-white/6"
                         }`}
                       >
                         <div className="flex items-start justify-between gap-4">
@@ -415,7 +415,7 @@ export default function AdminDashboard() {
                         </div>
 
                         <div className="mt-5 grid grid-cols-3 gap-3">
-                          <div className="rounded-[1.2rem] border border-white/8 bg-slate-950/[0.48] p-3">
+                          <div className="rounded-[1.2rem] border border-white/8 bg-slate-950/48 p-3">
                             <div className="text-xs uppercase tracking-[0.2em] text-slate-500">
                               Waiting
                             </div>
@@ -423,7 +423,7 @@ export default function AdminDashboard() {
                               {day.waitingTokens}
                             </div>
                           </div>
-                          <div className="rounded-[1.2rem] border border-white/8 bg-slate-950/[0.48] p-3">
+                          <div className="rounded-[1.2rem] border border-white/8 bg-slate-950/48 p-3">
                             <div className="text-xs uppercase tracking-[0.2em] text-slate-500">
                               Serving
                             </div>
@@ -431,7 +431,7 @@ export default function AdminDashboard() {
                               {formatToken(day.currentServingToken)}
                             </div>
                           </div>
-                          <div className="rounded-[1.2rem] border border-white/8 bg-slate-950/[0.48] p-3">
+                          <div className="rounded-[1.2rem] border border-white/8 bg-slate-950/48 p-3">
                             <div className="text-xs uppercase tracking-[0.2em] text-slate-500">
                               Completed
                             </div>
@@ -478,8 +478,8 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="mt-6 grid gap-4 xl:grid-cols-[1.08fr_0.92fr]">
-                  <div className="relative overflow-hidden rounded-[2rem] border border-emerald-300/18 bg-[linear-gradient(155deg,rgba(16,185,129,0.16),rgba(8,11,21,0.92)_55%)] p-6">
-                    <div className="absolute right-[-3rem] top-[-3rem] h-36 w-36 rounded-full bg-emerald-400/20 blur-3xl" />
+                  <div className="relative overflow-hidden rounded-4xl border border-emerald-300/18 bg-[linear-gradient(155deg,rgba(16,185,129,0.16),rgba(8,11,21,0.92)_55%)] p-6">
+                    <div className="absolute -right-12 -top-12 h-36 w-36 rounded-full bg-emerald-400/20 blur-3xl" />
                     <div className="relative z-10">
                       <div className="text-xs uppercase tracking-[0.24em] text-emerald-100/80">
                         Current Serving Token
@@ -502,7 +502,7 @@ export default function AdminDashboard() {
                       nextTokens.map((token, index) => (
                         <div
                           key={token.id}
-                          className="rounded-[1.6rem] border border-white/10 bg-white/[0.04] p-4"
+                          className="rounded-[1.6rem] border border-white/10 bg-white/4 p-4"
                         >
                           <div className="flex items-center justify-between gap-4">
                             <div>
@@ -525,7 +525,7 @@ export default function AdminDashboard() {
                         </div>
                       ))
                     ) : (
-                      <div className="flex h-full min-h-[240px] items-center justify-center rounded-[1.8rem] border border-dashed border-white/12 bg-white/[0.03] px-6 py-10 text-center text-sm text-slate-400">
+                      <div className="flex h-full min-h-60 items-center justify-center rounded-[1.8rem] border border-dashed border-white/12 bg-white/3 px-6 py-10 text-center text-sm text-slate-400">
                         No upcoming tokens are waiting right now.
                       </div>
                     )}
@@ -636,7 +636,7 @@ export default function AdminDashboard() {
               </div>
 
               {bookingsLoading ? (
-                <div className="mt-6 rounded-[1.75rem] border border-white/10 bg-white/[0.03] px-6 py-12 text-center text-sm text-slate-400">
+                <div className="mt-6 rounded-[1.75rem] border border-white/10 bg-white/3 px-6 py-12 text-center text-sm text-slate-400">
                   Loading bookings...
                 </div>
               ) : filteredBookings.length ? (
@@ -647,8 +647,8 @@ export default function AdminDashboard() {
                         key={booking.id}
                         className={`rounded-[1.6rem] border p-4 ${
                           booking.isCurrent
-                            ? "border-emerald-300/18 bg-emerald-400/[0.08]"
-                            : "border-white/10 bg-white/[0.03]"
+                            ? "border-emerald-300/18 bg-emerald-400/8"
+                            : "border-white/10 bg-white/3"
                         }`}
                       >
                         <div className="flex items-start justify-between gap-4">
@@ -687,7 +687,7 @@ export default function AdminDashboard() {
                           </div>
                         </div>
 
-                        <div className="mt-4 rounded-[1.35rem] border border-white/8 bg-slate-950/[0.48] p-4">
+                        <div className="mt-4 rounded-[1.35rem] border border-white/8 bg-slate-950/48 p-4">
                           <div className="text-xs uppercase tracking-[0.24em] text-slate-500">
                             Booked
                           </div>
@@ -715,10 +715,10 @@ export default function AdminDashboard() {
                         {filteredBookings.map((booking) => (
                           <tr
                             key={booking.id}
-                            className={`border-b border-white/[0.06] text-sm text-slate-200 last:border-b-0 ${
+                            className={`border-b border-white/6 text-sm text-slate-200 last:border-b-0 ${
                               booking.isCurrent
-                                ? "bg-emerald-400/[0.08]"
-                                : "hover:bg-white/[0.03]"
+                                ? "bg-emerald-400/8"
+                                : "hover:bg-white/3"
                             }`}
                           >
                             <td className="px-4 py-4 font-semibold text-white">
@@ -755,7 +755,7 @@ export default function AdminDashboard() {
                   </div>
                 </>
               ) : (
-                <div className="mt-6 rounded-[1.75rem] border border-dashed border-white/12 bg-white/[0.03] px-6 py-12 text-center">
+                <div className="mt-6 rounded-[1.75rem] border border-dashed border-white/12 bg-white/3 px-6 py-12 text-center">
                   <div className="text-sm uppercase tracking-[0.24em] text-slate-500">
                     No bookings match
                   </div>
@@ -779,7 +779,7 @@ export default function AdminDashboard() {
 
       {showResetDialog ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 px-4 backdrop-blur-md">
-          <div className="w-full max-w-lg rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(11,17,31,0.96),rgba(8,11,21,0.98))] p-6 shadow-[0_28px_80px_rgba(2,6,23,0.55)]">
+          <div className="w-full max-w-lg rounded-4xl border border-white/10 bg-[linear-gradient(180deg,rgba(11,17,31,0.96),rgba(8,11,21,0.98))] p-6 shadow-[0_28px_80px_rgba(2,6,23,0.55)]">
             <div className="admin-kicker">Confirm Reset</div>
             <h3 className="mt-3 text-2xl font-semibold tracking-tight text-white">
               Reset the {selectedDayInfo?.label?.toLowerCase() || "selected"} queue?

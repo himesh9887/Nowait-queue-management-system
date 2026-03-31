@@ -57,8 +57,8 @@ export default function QueueTable({ description, title, tokens }) {
                 key={token.id}
                 className={`rounded-[1.6rem] border p-4 ${
                   token.isCurrent
-                    ? "border-emerald-300/18 bg-emerald-400/[0.08]"
-                    : "border-white/10 bg-white/[0.03]"
+                    ? "border-emerald-300/18 bg-emerald-400/8"
+                    : "border-white/10 bg-white/3"
                 }`}
               >
                 <div className="flex items-start justify-between gap-4">
@@ -113,8 +113,8 @@ export default function QueueTable({ description, title, tokens }) {
                 {tokens.map((token) => (
                   <tr
                     key={token.id}
-                    className={`border-b border-white/[0.06] text-sm text-slate-200 transition last:border-b-0 ${
-                      token.isCurrent ? "bg-emerald-400/[0.08]" : "hover:bg-white/[0.03]"
+                    className={`border-b border-white/6 text-sm text-slate-200 transition last:border-b-0 ${
+                      token.isCurrent ? "bg-emerald-400/8" : "hover:bg-white/3"
                     }`}
                   >
                     <td className="px-4 py-4">
@@ -123,7 +123,7 @@ export default function QueueTable({ description, title, tokens }) {
                           className={`flex h-11 w-11 items-center justify-center rounded-2xl border ${
                             token.isCurrent
                               ? "border-emerald-300/18 bg-emerald-400/12 text-emerald-100"
-                              : "border-white/10 bg-white/[0.04] text-slate-200"
+                              : "border-white/10 bg-white/4 text-slate-200"
                           }`}
                         >
                           <TicketIcon className="h-4 w-4" />
@@ -159,7 +159,7 @@ export default function QueueTable({ description, title, tokens }) {
           </div>
         </>
       ) : (
-        <div className="mt-6 rounded-[1.75rem] border border-dashed border-white/12 bg-white/[0.03] px-6 py-12 text-center">
+        <div className="mt-6 rounded-[1.75rem] border border-dashed border-white/12 bg-white/3 px-6 py-12 text-center">
           <div className="text-sm uppercase tracking-[0.24em] text-slate-500">
             Queue empty
           </div>

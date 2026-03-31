@@ -6,7 +6,7 @@ export default function HeroBanner({ stats, currentServing, socketConnected }) {
   return (
     <GlassPanel className="animated-border overflow-hidden p-0">
       <div className="grid gap-8 px-6 py-6 sm:px-8 sm:py-8 xl:grid-cols-[1.2fr_0.8fr]">
-        <div className="relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-slate-950/[0.6] p-6 sm:p-8">
+        <div className="relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6 sm:p-8">
           <div className="section-label">NoWait Live Queue</div>
           <h1 className="mt-4 max-w-3xl text-4xl font-semibold tracking-tight text-white sm:text-5xl">
             Real-time booking, smarter queue movement, and zero guessing on wait time.
@@ -16,7 +16,7 @@ export default function HeroBanner({ stats, currentServing, socketConnected }) {
           </p>
 
           <div className="mt-6 flex flex-wrap gap-3">
-            <div className="rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-sm text-slate-200">
+            <div className="rounded-full border border-white/10 bg-white/6 px-4 py-2 text-sm text-slate-200">
               {socketConnected ? "Live socket connected" : "Live socket reconnecting"}
             </div>
             <div className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-sm text-cyan-100">

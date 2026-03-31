@@ -24,7 +24,7 @@ export default function QueueTable({
       {tokens.length ? (
         <div className="overflow-x-auto">
           <table className="min-w-full text-left">
-            <thead className="border-b border-white/10 bg-white/[0.04] text-xs uppercase tracking-[0.24em] text-slate-400">
+            <thead className="border-b border-white/10 bg-white/4 text-xs uppercase tracking-[0.24em] text-slate-400">
               <tr>
                 <th className="px-6 py-4 sm:px-8">Token</th>
                 {showBookedBy ? <th className="px-6 py-4 sm:px-8">Booked By</th> : null}
@@ -39,8 +39,8 @@ export default function QueueTable({
               {tokens.map((token) => (
                 <tr
                   key={token.id}
-                  className={`border-b border-white/[0.06] text-sm text-slate-200 last:border-b-0 ${
-                    token.isCurrent ? "bg-emerald-400/[0.08]" : ""
+                  className={`border-b border-white/6 text-sm text-slate-200 last:border-b-0 ${
+                    token.isCurrent ? "bg-emerald-400/8" : ""
                   }`}
                 >
                   <td className="px-6 py-4 font-semibold text-white sm:px-8">

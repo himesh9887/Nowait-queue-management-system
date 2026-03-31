@@ -69,13 +69,13 @@ export default function WaitingCard({
         : "Session complete.";
 
   return (
-    <section className="glass-card space-y-6 p-6 sm:p-8">
+    <section className="user-dashboard-card space-y-6 p-5 sm:p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <div className="section-label">Live Waiting Time</div>
-          <h2 className="heading-md mt-2">Queue position and ETA</h2>
-          <p className="text-muted mt-2">
-            Queue position and ETA adjust automatically as tokens are served.
+          <div className="section-label">Wait Tracker</div>
+          <h2 className="heading-md mt-2">Live wait estimate</h2>
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
+            See how many people are ahead, how fast the desk is moving, and when your turn should arrive.
           </p>
         </div>
 
@@ -84,29 +84,49 @@ export default function WaitingCard({
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="rounded-xl border border-white/8 bg-gradient-to-br from-slate-900 to-slate-950 p-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="user-metric-tile">
           <div className="card-label">Tokens ahead</div>
           <div className="mt-2 text-3xl font-bold text-white">
             {myToken?.status === "waiting" ? tokensAhead : 0}
           </div>
-          <div className="mt-2 text-sm text-slate-300">
+          <div className="mt-2 text-sm text-slate-400">
             {queueMessage}
           </div>
         </div>
 
-        <div className="rounded-xl border border-cyan-400/20 bg-gradient-to-br from-cyan-950/40 to-blue-950/40 p-4">
+        <div className="user-metric-tile">
           <div className="card-label">Estimated wait</div>
           <div className="mt-2 text-3xl font-bold text-white">
             {etaLabel}
           </div>
-          <div className="mt-2 text-sm text-slate-300">
+          <div className="mt-2 text-sm text-slate-400">
             {etaSupportCopy}
+          </div>
+        </div>
+
+        <div className="user-metric-tile">
+          <div className="card-label">Now serving</div>
+          <div className="mt-2 text-3xl font-bold text-white">
+            {formatToken(currentServing?.tokenNumber)}
+          </div>
+          <div className="mt-2 text-sm text-slate-400">
+            Current desk token
+          </div>
+        </div>
+
+        <div className="user-metric-tile">
+          <div className="card-label">Avg. service time</div>
+          <div className="mt-2 text-3xl font-bold text-white">
+            {avgServiceTime ? formatMinutes(avgServiceTime) : "--"}
+          </div>
+          <div className="mt-2 text-sm text-slate-400">
+            Typical time per token
           </div>
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-cyan-400/20 bg-gradient-to-r from-cyan-950/30 to-blue-950/30 p-5">
+      <div className="overflow-hidden rounded-[1.6rem] border border-cyan-400/20 bg-[linear-gradient(135deg,rgba(8,47,73,0.6),rgba(15,23,42,0.82),rgba(30,41,59,0.8))] p-5">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <div className="card-label text-cyan-300">Live countdown</div>
@@ -126,12 +146,12 @@ export default function WaitingCard({
           </div>
         </div>
 
-        <p className="mt-2 text-sm text-slate-300">
+        <p className="mt-2 text-sm leading-7 text-slate-300">
           {countdownSupportCopy}
         </p>
       </div>
 
-      <div className="rounded-lg border border-white/8 bg-slate-950/40 p-4">
+      <div className="rounded-[1.4rem] border border-white/10 bg-slate-950/62 p-4">
         <div className="mb-3 flex items-center justify-between text-sm">
           <span className="text-slate-300">Progress</span>
           <span className="text-xs text-slate-500">
@@ -148,9 +168,36 @@ export default function WaitingCard({
         </div>
         <div className="h-2 overflow-hidden rounded-full bg-slate-900">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 transition-all"
+            className="h-full rounded-full bg-linear-to-r from-cyan-400 via-blue-400 to-purple-400 transition-all"
             style={{ width: `${progressValue}%` }}
           />
+        </div>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <div className="rounded-2xl border border-white/8 bg-white/3 p-3">
+            <div className="card-label">Current state</div>
+            <div className="mt-2 text-sm font-semibold text-white">
+              {myToken?.status === "waiting"
+                ? queueHasNotStarted
+                  ? "Queue not started yet"
+                  : tokensAhead <= 2
+                    ? "Almost your turn"
+                    : "Queue is moving"
+                : myToken?.status === "serving"
+                  ? "Go to the desk"
+                  : "Booking finished"}
+            </div>
+          </div>
+          <div className="rounded-2xl border border-white/8 bg-white/3 p-3">
+            <div className="card-label">Helpful note</div>
+            <div className="mt-2 text-sm font-semibold text-white">
+              {myToken?.status === "waiting"
+                ? "Keep this page open for live updates."
+                : myToken?.status === "serving"
+                  ? "Keep your token visible."
+                  : "Invoice remains available below."}
+            </div>
+          </div>
         </div>
       </div>
     </section>

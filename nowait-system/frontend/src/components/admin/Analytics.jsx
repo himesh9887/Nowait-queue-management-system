@@ -166,7 +166,7 @@ export default function Analytics({ bookings, selectedDayInfo, stats }) {
       </div>
 
       <div className="mt-6 grid gap-6 2xl:grid-cols-[1.25fr_0.75fr]">
-        <div className="rounded-[1.85rem] border border-white/10 bg-slate-950/[0.62] p-5">
+        <div className="rounded-[1.85rem] border border-white/10 bg-slate-950/62 p-5">
           <div className="flex items-center justify-between gap-4">
             <div>
               <div className="text-sm font-medium text-slate-200">Peak hours</div>
@@ -174,7 +174,7 @@ export default function Analytics({ bookings, selectedDayInfo, stats }) {
                 Booking creation by hour
               </div>
             </div>
-            <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-300">
+            <div className="rounded-full border border-white/10 bg-white/4 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-300">
               {peakSlot.count} bookings
             </div>
           </div>
@@ -194,21 +194,21 @@ export default function Analytics({ bookings, selectedDayInfo, stats }) {
                       }}
                     />
                   </div>
-                  <div className="text-center text-[11px] leading-5 text-slate-400">
+                  <div className="text-center text-xs leading-5 text-slate-400">
                     {item.label}
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="mt-6 rounded-[1.55rem] border border-dashed border-white/12 bg-white/[0.03] px-6 py-10 text-center text-sm text-slate-400">
+            <div className="mt-6 rounded-[1.55rem] border border-dashed border-white/12 bg-white/3 px-6 py-10 text-center text-sm text-slate-400">
               Analytics will populate as soon as bookings arrive for this day.
             </div>
           )}
         </div>
 
         <div className="space-y-4">
-          <div className="rounded-[1.85rem] border border-white/10 bg-slate-950/[0.62] p-5">
+          <div className="rounded-[1.85rem] border border-white/10 bg-slate-950/62 p-5">
             <div className="text-sm font-medium text-slate-200">Status mix</div>
             <div className="mt-1 text-xs uppercase tracking-[0.24em] text-slate-500">
               Current queue distribution
@@ -227,7 +227,7 @@ export default function Analytics({ bookings, selectedDayInfo, stats }) {
                         {item.value} ({percent}%)
                       </span>
                     </div>
-                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/[0.06]">
+                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/6">
                       <div
                         className={`h-full rounded-full ${item.colorClassName}`}
                         style={{ width: `${percent}%` }}
@@ -239,14 +239,14 @@ export default function Analytics({ bookings, selectedDayInfo, stats }) {
             </div>
           </div>
 
-          <div className="rounded-[1.85rem] border border-white/10 bg-white/[0.04] p-5">
+          <div className="rounded-[1.85rem] border border-white/10 bg-white/4 p-5">
             <div className="text-sm font-medium text-slate-200">Service health</div>
             <div className="mt-1 text-xs uppercase tracking-[0.24em] text-slate-500">
               Completion and forecast
             </div>
 
             <div className="mt-6 grid gap-4">
-              <div className="rounded-[1.35rem] border border-white/10 bg-slate-950/[0.58] p-4">
+              <div className="rounded-[1.35rem] border border-white/10 bg-slate-950/58 p-4">
                 <div className="text-xs uppercase tracking-[0.24em] text-slate-500">
                   Completion rate
                 </div>
@@ -255,7 +255,7 @@ export default function Analytics({ bookings, selectedDayInfo, stats }) {
                 </div>
               </div>
 
-              <div className="rounded-[1.35rem] border border-white/10 bg-slate-950/[0.58] p-4">
+              <div className="rounded-[1.35rem] border border-white/10 bg-slate-950/58 p-4">
                 <div className="text-xs uppercase tracking-[0.24em] text-slate-500">
                   Queue forecast
                 </div>

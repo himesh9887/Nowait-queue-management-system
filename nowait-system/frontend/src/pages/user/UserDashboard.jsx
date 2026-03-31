@@ -18,28 +18,27 @@ function UserDashboardSkeleton() {
         <div className="relative grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
           <div className="space-y-4">
             <div className="h-4 w-40 rounded-full bg-white/10" />
-            <div className="h-12 max-w-2xl rounded-[1.3rem] bg-white/10" />
-            <div className="h-24 max-w-3xl rounded-[1.5rem] bg-white/6" />
-            <div className="flex flex-wrap gap-3">
-              <div className="h-11 w-44 rounded-full bg-white/8" />
-              <div className="h-11 w-40 rounded-full bg-white/8" />
+            <div className="h-12 max-w-2xl rounded-3xl bg-white/10" />
+            <div className="h-24 max-w-3xl rounded-3xl bg-white/6" />
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="h-28 rounded-3xl bg-white/8" />
+              <div className="h-28 rounded-3xl bg-white/8" />
+              <div className="h-28 rounded-3xl bg-white/8" />
+              <div className="h-28 rounded-3xl bg-white/8" />
             </div>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="h-36 rounded-[1.6rem] bg-white/8" />
-            <div className="h-36 rounded-[1.6rem] bg-white/8" />
-          </div>
+          <div className="h-90 rounded-4xl bg-white/5" />
         </div>
       </section>
 
+      <div className="h-105 rounded-4xl border border-white/10 bg-white/4 animate-pulse" />
       <div className="grid gap-5 xl:grid-cols-2">
-        <div className="h-96 rounded-[2rem] border border-white/10 bg-white/[0.04] animate-pulse" />
-        <div className="h-96 rounded-[2rem] border border-white/10 bg-white/[0.04] animate-pulse" />
+        <div className="h-96 rounded-4xl border border-white/10 bg-white/4 animate-pulse" />
+        <div className="h-96 rounded-4xl border border-white/10 bg-white/4 animate-pulse" />
       </div>
-
       <div className="grid gap-5 xl:grid-cols-2">
-        <div className="h-80 rounded-[2rem] border border-white/10 bg-white/[0.04] animate-pulse" />
-        <div className="h-80 rounded-[2rem] border border-white/10 bg-white/[0.04] animate-pulse" />
+        <div className="h-80 rounded-4xl border border-white/10 bg-white/4 animate-pulse" />
+        <div className="h-80 rounded-4xl border border-white/10 bg-white/4 animate-pulse" />
       </div>
     </div>
   );
@@ -101,6 +100,82 @@ function getNotice(myToken, socketConnected) {
   return "Live tracking is active.";
 }
 
+function getStatusLabel(myToken) {
+  if (!myToken) {
+    return "Ready to book";
+  }
+
+  if (myToken.status === "serving") {
+    return "Serving now";
+  }
+
+  if (myToken.status === "waiting") {
+    return "Waiting";
+  }
+
+  return "Completed";
+}
+
+function getActionContent(myToken, socketConnected, selectedDayInfo) {
+  if (!socketConnected) {
+    return {
+      title: "Connection is retrying",
+      body: "Your last queue snapshot is still visible. Fresh updates will continue as soon as the live connection returns.",
+      steps: [
+        "Keep this page open for automatic reconnection.",
+        "Avoid refreshing unless the screen stays offline for long.",
+        "Watch the queue section below for the latest visible update.",
+      ],
+    };
+  }
+
+  if (!myToken) {
+    return {
+      title: `Book for ${selectedDayInfo?.label || "today"}`,
+      body: "Pick a day, review the current queue load, and confirm your booking when you are ready.",
+      steps: [
+        "Choose today or tomorrow in the booking card.",
+        "Check how many people are waiting before you join.",
+        "Tap book token to reserve your place instantly.",
+      ],
+    };
+  }
+
+  if (myToken.status === "serving") {
+    return {
+      title: "Go to the service desk now",
+      body: "Your token is already being served. Keep your token visible and move to the counter.",
+      steps: [
+        "Head to the desk immediately.",
+        "Keep this screen or your token number ready.",
+        "Download your invoice after service if needed.",
+      ],
+    };
+  }
+
+  if (myToken.status === "waiting") {
+    return {
+      title: "Stay ready for your turn",
+      body: "Your position and ETA will keep updating here in real time while the queue moves forward.",
+      steps: [
+        "Keep notifications on if you want an audio alert.",
+        "Check tokens ahead and countdown below.",
+        "Start moving to the desk once only a few people remain.",
+      ],
+    };
+  }
+
+  return {
+    title: "This booking is complete",
+    body: "You can still review the invoice and history below, or book a fresh token when you need another visit.",
+    steps: [
+      "Download the invoice if you need a receipt.",
+      "Review previous visits in your history.",
+      "Book a new token whenever you are ready.",
+    ],
+  };
+}
+
 export default function UserDashboard() {
   const { user } = useAuth();
   const {
@@ -124,9 +199,76 @@ export default function UserDashboard() {
   const historyItems = userHistory.filter(
     (item) => item.id !== myToken?.id && item.status === "completed",
   );
+  const selectedSummary =
+    daySummaries.find((item) => item.relativeLabel === selectedDay) || selectedDayInfo;
   const headline = getHeadline(myToken, selectedDayInfo);
   const supportCopy = getSupportCopy(myToken, selectedDayInfo);
   const notice = getNotice(myToken, socketConnected);
+  const statusLabel = getStatusLabel(myToken);
+  const actionContent = getActionContent(myToken, socketConnected, selectedDayInfo);
+  const heroMetrics = hasToken
+    ? [
+        {
+          label: "Token",
+          value: formatToken(myToken?.tokenNumber),
+          detail: myToken?.bookingLabel || selectedDayInfo?.label || "Selected queue",
+        },
+        {
+          label: "Status",
+          value: statusLabel,
+          detail: socketConnected ? "Live sync active" : "Waiting for reconnection",
+        },
+        {
+          label: myToken?.status === "waiting" ? "People ahead" : "Queue position",
+          value:
+            myToken?.status === "waiting"
+              ? String(myToken?.tokensAhead ?? 0)
+              : myToken?.status === "serving"
+                ? "Now"
+                : myToken?.queuePosition
+                  ? `#${myToken.queuePosition}`
+                  : "Done",
+          detail:
+            myToken?.status === "waiting"
+              ? "Live queue updates"
+              : myToken?.status === "serving"
+                ? "Please go to desk"
+                : "Booking closed",
+        },
+        {
+          label: myToken?.status === "waiting" ? "Estimated wait" : "Booked on",
+          value:
+            myToken?.status === "waiting"
+              ? formatMinutes(myToken?.estimatedWaitingTime)
+              : selectedDayInfo?.label || myToken?.bookingLabel || "Selected day",
+          detail:
+            myToken?.status === "waiting"
+              ? `Serving ${formatToken(currentServing?.tokenNumber)} right now`
+              : "Queue day",
+        },
+      ]
+    : [
+        {
+          label: "Selected day",
+          value: selectedDayInfo?.label || "Today",
+          detail: selectedSummary?.displayDate || "Choose your queue day",
+        },
+        {
+          label: "Waiting now",
+          value: String(selectedSummary?.waitingTokens ?? 0),
+          detail: "People already in line",
+        },
+        {
+          label: "Now serving",
+          value: formatToken(selectedSummary?.currentServingToken),
+          detail: "Current desk token",
+        },
+        {
+          label: "Average pace",
+          value: stats.avgServiceTime ? formatMinutes(stats.avgServiceTime) : "--",
+          detail: "Typical time per token",
+        },
+      ];
 
   function handleDownloadInvoice() {
     if (!myToken) {
@@ -148,40 +290,12 @@ export default function UserDashboard() {
     return <UserDashboardSkeleton />;
   }
 
-  if (!hasToken) {
-    return (
-      <div className="space-y-5 sm:space-y-6">
-        <BookingCard
-          booking={booking}
-          daySummaries={daySummaries}
-          hasActiveToken={hasActiveToken}
-          myToken={myToken}
-          onBookToken={bookToken}
-          onSelectDay={setSelectedDay}
-          selectedDay={selectedDay}
-          selectedDayInfo={selectedDayInfo}
-          socketConnected={socketConnected}
-        />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <section className="user-dashboard-hero">
         <div className="user-dashboard-hero-glow" />
-        <div className="relative grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
-          <div className="space-y-4">
-            <div>
-              <div className="section-label">Personal Queue Console</div>
-              <h1 className="mt-3 max-w-3xl text-4xl font-bold tracking-tight text-white sm:text-5xl">
-                {headline}
-              </h1>
-            </div>
-            <p className="max-w-2xl text-base leading-relaxed text-slate-300">
-              {supportCopy}
-            </p>
-
+        <div className="relative grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_360px]">
+          <div className="space-y-5">
             <div className="flex flex-wrap gap-2">
               <div className="user-dashboard-chip">
                 <BellIcon className="h-4 w-4 text-sky-200" />
@@ -192,84 +306,68 @@ export default function UserDashboard() {
                 <span className="text-sm">{socketConnected ? "Live queue online" : "Reconnecting to queue"}</span>
               </div>
             </div>
+
+            <div>
+              <div className="section-label">Your Queue Summary</div>
+              <h1 className="mt-3 max-w-3xl text-3xl font-bold tracking-tight text-white sm:text-5xl">
+                {headline}
+              </h1>
+            </div>
+            <p className="max-w-2xl text-sm leading-7 text-slate-300 sm:text-base">
+              {supportCopy}
+            </p>
+
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              {heroMetrics.map((item) => (
+                <article key={item.label} className="user-hero-metric">
+                  <div className="user-dashboard-label">{item.label}</div>
+                  <div className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-[1.85rem]">
+                    {item.value}
+                  </div>
+                  <p className="mt-2 text-sm text-slate-400">{item.detail}</p>
+                </article>
+              ))}
+            </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            {daySummaries.map((day) => {
-              const active = day.relativeLabel === selectedDay;
+          <aside className="user-dashboard-card user-dashboard-card-strong space-y-5 p-5 sm:p-6">
+            <div>
+              <div className="section-label">What To Do Now</div>
+              <h2 className="mt-3 text-2xl font-semibold tracking-tight text-white">
+                {actionContent.title}
+              </h2>
+              <p className="mt-3 text-sm leading-7 text-slate-300">
+                {actionContent.body}
+              </p>
+            </div>
 
-              return (
-                <button
-                  key={day.key}
-                  type="button"
-                  onClick={() => setSelectedDay(day.relativeLabel)}
-                  className={`rounded-xl border p-4 transition ${
-                    active
-                      ? "border-cyan-400/40 bg-cyan-400/10 shadow-lg shadow-cyan-400/10"
-                      : "border-white/10 bg-slate-950/40 hover:border-white/20 hover:bg-slate-950/50"
-                  }`}
+            <div className="space-y-3">
+              {actionContent.steps.map((step, index) => (
+                <div
+                  key={step}
+                  className="flex items-start gap-3 rounded-[1.35rem] border border-white/10 bg-white/4 px-4 py-3"
                 >
-                  <div className="mb-3 flex items-center justify-between gap-3">
-                    <div className="text-base font-semibold text-white">{day.label}</div>
-                    <div className="text-xs text-slate-400">{day.displayDate}</div>
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-sky-300/20 bg-sky-400/10 text-sm font-semibold text-sky-100">
+                    {index + 1}
                   </div>
-                  <div className="grid grid-cols-3 gap-2 text-sm text-slate-300">
-                    <div>
-                      <div className="card-label">My token</div>
-                      <div className="mt-1 text-lg font-semibold text-white">
-                        {day.relativeLabel === selectedDay
-                          ? formatToken(myToken?.tokenNumber)
-                          : "---"}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="card-label">Waiting</div>
-                      <div className="mt-1 text-lg font-semibold text-white">
-                        {day.waitingTokens}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="card-label">Serving</div>
-                      <div className="mt-1 text-lg font-semibold text-white">
-                        {formatToken(day.currentServingToken)}
-                      </div>
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+                  <p className="pt-1 text-sm leading-6 text-slate-200">{step}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="rounded-[1.35rem] border border-white/10 bg-slate-950/50 p-4">
+              <div className="user-dashboard-label">Selected day</div>
+              <div className="mt-2 text-lg font-semibold text-white">
+                {selectedSummary?.label || selectedDayInfo?.label || "Today"}
+              </div>
+              <div className="mt-2 flex items-center justify-between gap-3 text-sm text-slate-400">
+                <span>{selectedSummary?.displayDate || "--"}</span>
+                <span>{selectedSummary?.waitingTokens ?? 0} waiting</span>
+              </div>
+            </div>
+          </aside>
         </div>
       </section>
-
-      <div className="grid gap-6 xl:grid-cols-2">
-        <TokenCard
-          myToken={myToken}
-          selectedDayInfo={selectedDayInfo}
-          socketConnected={socketConnected}
-        />
-        <WaitingCard
-          avgServiceTime={stats.avgServiceTime}
-          currentServing={currentServing}
-          generatedAt={generatedAt}
-          myToken={myToken}
-        />
-      </div>
-
-      <div className="grid gap-6 xl:grid-cols-2">
-        <QueueCard
-          currentServing={currentServing}
-          generatedAt={generatedAt}
-          queue={queue}
-          selectedDayInfo={selectedDayInfo}
-          socketConnected={socketConnected}
-        />
-        <InvoiceCard
-          myToken={myToken}
-          onDownloadInvoice={handleDownloadInvoice}
-          userName={user?.displayName || user?.username || "NoWait User"}
-        />
-      </div>
 
       <BookingCard
         booking={booking}
@@ -282,6 +380,47 @@ export default function UserDashboard() {
         selectedDayInfo={selectedDayInfo}
         socketConnected={socketConnected}
       />
+
+      {hasToken ? (
+        <>
+          <div className="grid gap-6 xl:grid-cols-2">
+            <TokenCard
+              myToken={myToken}
+              selectedDayInfo={selectedDayInfo}
+              socketConnected={socketConnected}
+            />
+            <WaitingCard
+              avgServiceTime={stats.avgServiceTime}
+              currentServing={currentServing}
+              generatedAt={generatedAt}
+              myToken={myToken}
+            />
+          </div>
+
+          <div className="grid gap-6 xl:grid-cols-2">
+            <QueueCard
+              currentServing={currentServing}
+              generatedAt={generatedAt}
+              queue={queue}
+              selectedDayInfo={selectedDayInfo}
+              socketConnected={socketConnected}
+            />
+            <InvoiceCard
+              myToken={myToken}
+              onDownloadInvoice={handleDownloadInvoice}
+              userName={user?.displayName || user?.username || "NoWait User"}
+            />
+          </div>
+        </>
+      ) : (
+        <QueueCard
+          currentServing={currentServing}
+          generatedAt={generatedAt}
+          queue={queue}
+          selectedDayInfo={selectedDayInfo}
+          socketConnected={socketConnected}
+        />
+      )}
 
       <HistoryCard items={historyItems} />
     </div>
