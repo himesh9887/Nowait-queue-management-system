@@ -8,26 +8,39 @@ function Spinner() {
 }
 
 const variants = {
+  primary: "btn-primary",
+  secondary: "btn-secondary",
+  tertiary: "btn-tertiary",
+  danger: "btn-danger",
+  success: "btn-success",
   premium: "auth-premium-button",
-  primary: "primary-button",
-  secondary: "secondary-button",
-  danger: "danger-button",
+};
+
+const sizes = {
+  sm: "btn-sm",
+  md: "px-5 py-3 text-sm",
+  lg: "btn-lg",
 };
 
 export default function Button({
   children,
   loading = false,
   disabled = false,
-  variant = "premium",
+  variant = "primary",
+  size = "md",
   className = "",
   type = "button",
-  fullWidth = true,
+  fullWidth = false,
   ...props
 }) {
+  const variantClass = variants[variant] || variants.primary;
+  const sizeClass = variants[variant] === "auth-premium-button" ? "h-14" : sizes[size] || sizes.md;
+  const widthClass = fullWidth ? "btn-block" : "";
+
   return (
     <button
       type={type}
-      className={`${variants[variant] || variants.premium} h-14 ${fullWidth ? "w-full" : ""} gap-2 ${className}`.trim()}
+      className={`${variantClass} ${sizeClass} ${widthClass} gap-2 ${className}`.trim()}
       disabled={disabled || loading}
       {...props}
     >

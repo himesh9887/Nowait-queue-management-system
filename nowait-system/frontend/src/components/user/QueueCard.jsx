@@ -15,14 +15,12 @@ export default function QueueCard({
   const upcomingTokens = queue.filter((token) => token.status !== "serving").slice(0, 3);
 
   return (
-    <section className="user-dashboard-card">
+    <section className="glass-card space-y-6 p-6 sm:p-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <div className="user-dashboard-label">Live Queue Card</div>
-          <h2 className="mt-3 text-2xl font-semibold tracking-tight text-white">
-            Queue status in real time
-          </h2>
-          <p className="mt-3 max-w-xl text-sm leading-7 text-slate-300">
+          <div className="section-label">Live Queue</div>
+          <h2 className="heading-md mt-2">Queue status in real time</h2>
+          <p className="text-muted mt-2">
             Watch the desk activity and upcoming tokens without refreshing the page.
           </p>
         </div>
@@ -31,82 +29,79 @@ export default function QueueCard({
           <span
             className={`h-2 w-2 rounded-full ${
               socketConnected
-                ? "bg-emerald-300 shadow-[0_0_16px_rgba(110,231,183,0.85)]"
+                ? "bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.7)]"
                 : "bg-slate-500"
             }`}
           />
-          <span>{socketConnected ? "Live queue online" : "Queue reconnecting"}</span>
+          <span className="text-xs font-medium">{socketConnected ? "Live" : "Reconnecting"}</span>
         </div>
       </div>
 
-      <div className="mt-8 grid gap-5 lg:grid-cols-[0.92fr_1.08fr]">
-        <div className="user-serving-board">
-          <div className="flex items-center gap-2 text-sky-200">
-            <QueuePulseIcon className="h-5 w-5" />
-            <span className="user-dashboard-label text-sky-200/90">Current serving token</span>
-          </div>
-          <div className="mt-6 text-[4.2rem] font-semibold leading-none tracking-tight text-white sm:text-[5rem]">
-            {formatToken(currentServing?.tokenNumber)}
-          </div>
-          <div className="mt-3 text-base text-slate-300">
-            Now serving in the {selectedDayInfo?.label?.toLowerCase() || "selected"} queue
-          </div>
-          <div className="mt-6 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-slate-300">
-            Updated {formatDateTime(generatedAt)}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="relative overflow-hidden rounded-2xl border border-white/8 bg-gradient-to-br from-slate-900 to-slate-950 p-8">
+          <div className="absolute -left-20 -bottom-20 h-40 w-40 rounded-full bg-emerald-500/10 blur-3xl" />
+          
+          <div className="relative">
+            <div className="text-sm text-slate-400 mb-2">Now serving</div>
+            <div className="text-5xl font-bold text-white sm:text-6xl">
+              {formatToken(currentServing?.tokenNumber)}
+            </div>
+            <div className="mt-4 text-slate-300">
+              In the {selectedDayInfo?.label?.toLowerCase() || "selected"} queue
+            </div>
+            <div className="mt-4 text-xs text-slate-400">
+              ✓ Updated {formatDateTime(generatedAt)}
+            </div>
           </div>
         </div>
 
         <div className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="user-metric-tile">
-              <div className="user-dashboard-label">Active queue</div>
-              <div className="mt-3 text-2xl font-semibold text-white">{queue.length}</div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="surface-card">
+              <div className="card-label">Active queue</div>
+              <div className="mt-2 text-2xl font-bold text-white">{queue.length}</div>
+              <div className="mt-1 text-xs text-slate-500">tokens</div>
             </div>
-            <div className="user-metric-tile">
-              <div className="flex items-center gap-2 text-slate-300">
-                <SparkWaveIcon className="h-4 w-4 text-violet-200" />
-                <span className="user-dashboard-label text-slate-300">Queue flow</span>
-              </div>
-              <div className="mt-3 text-2xl font-semibold text-white">
+            <div className="surface-card">
+              <div className="card-label">Queue flow</div>
+              <div className="mt-2 text-2xl font-bold text-white">
                 {upcomingTokens.length ? "Moving" : "Quiet"}
               </div>
+              <div className="mt-1 text-xs text-slate-500">status</div>
             </div>
           </div>
 
-          <div className="rounded-[1.5rem] border border-white/10 bg-slate-950/[0.55] p-4">
-            <div className="flex items-center justify-between gap-4">
-              <div className="text-sm font-medium text-white">Upcoming tokens</div>
-              <div className="text-xs uppercase tracking-[0.22em] text-slate-400">
-                Next in line
-              </div>
-            </div>
+          <div className="rounded-lg border border-white/8 bg-slate-950/40 p-4">
+            <div className="mb-3 text-sm font-semibold text-white">Upcoming tokens</div>
 
-            <div className="mt-4 space-y-3">
+            <div className="space-y-2">
               {upcomingTokens.length ? (
                 upcomingTokens.map((token) => (
                   <div
                     key={token.id}
-                    className="flex items-center justify-between gap-4 rounded-[1.15rem] border border-white/[0.06] bg-white/[0.03] px-4 py-3"
+                    className="flex items-center justify-between gap-4 rounded-lg border border-white/8 bg-slate-900/50 px-3 py-2"
                   >
                     <div>
-                      <div className="text-lg font-semibold text-white">
+                      <div className="text-sm font-semibold text-white">
                         {formatToken(token.tokenNumber)}
                       </div>
-                      <div className="mt-1 text-sm text-slate-400">
-                        Queue position #{token.queuePosition || token.position || "-"}
+                      <div className="text-xs text-slate-500">
+                        Position #{token.queuePosition || token.position || "-"}
                       </div>
                     </div>
-                    <div className="text-right text-sm text-slate-300">
-                      <div>{formatMinutes(token.estimatedWaitingTime)}</div>
-                      <div className="mt-1 text-xs uppercase tracking-[0.22em] text-slate-500">
+                    <div className="text-right">
+                      <div className="text-sm font-semibold text-white">
+                        {formatMinutes(token.estimatedWaitingTime)}
+                      </div>
+                      <div className="text-xs text-slate-500 capitalize">
                         {token.status}
                       </div>
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="rounded-[1.15rem] border border-dashed border-white/10 bg-white/[0.02] px-4 py-6 text-sm text-slate-400">
-                  No waiting tokens are in line right now.
+                <div className="rounded-lg border border-dashed border-white/10 bg-slate-900/30 px-3 py-4 text-center text-xs text-slate-500">
+                  No waiting tokens
                 </div>
               )}
             </div>

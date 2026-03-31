@@ -104,26 +104,26 @@ export default function Login() {
       {successMessage ? (
         <div className="auth-banner auth-banner-success">
           <CheckCircleIcon className="mt-0.5 h-5 w-5 shrink-0" />
-          <div>{successMessage}</div>
+          <div className="text-sm">{successMessage}</div>
         </div>
       ) : null}
 
       {errorMessage ? (
         <div className="auth-banner auth-banner-error">
           <AlertCircleIcon className="mt-0.5 h-5 w-5 shrink-0" />
-          <div>{errorMessage}</div>
+          <div className="text-sm">{errorMessage}</div>
         </div>
       ) : null}
 
-      <form className="space-y-5" onSubmit={handleSubmit}>
+      <form className="space-y-6" onSubmit={handleSubmit}>
         <Input
           label="Username"
           icon={<UserIcon className="h-5 w-5" />}
           value={form.username}
           onChange={(event) => updateField("username", event.target.value)}
-          placeholder="Enter your username"
+          placeholder="your username"
           autoComplete="username"
-          helper="Sign in with the username you used during account creation."
+          helper="Sign in with your registered username."
           error={fieldErrors.username}
         />
 
@@ -134,33 +134,33 @@ export default function Login() {
           showPasswordToggle
           value={form.password}
           onChange={(event) => updateField("password", event.target.value)}
-          placeholder="Enter your password"
+          placeholder="your password"
           autoComplete="current-password"
-          helper="You will be routed to the correct dashboard automatically after sign-in."
+          helper="Your password is encrypted and secure."
           error={fieldErrors.password}
         />
 
-        <div className="auth-support-row">
-          <label className="flex items-center gap-3 text-sm text-slate-200">
+        <div className="flex items-center justify-between gap-4 rounded-lg border border-white/8 bg-slate-950/40 px-4 py-3">
+          <label className="flex items-center gap-3 text-sm text-slate-300">
             <input
               type="checkbox"
               checked={rememberMe}
               onChange={(event) => setRememberMe(event.target.checked)}
-              className="h-4 w-4 rounded border-white/20 bg-transparent accent-sky-400"
+              className="checkbox-field"
             />
-            Remember this device
+            <span>Remember this device</span>
           </label>
         </div>
 
-        <Button type="submit" loading={submitting}>
-          {submitting ? "Signing in..." : "Login"}
+        <Button type="submit" loading={submitting} variant="premium" fullWidth>
+          {submitting ? "Signing in..." : "Sign In"}
         </Button>
       </form>
 
       <p className="mt-6 text-center text-sm text-slate-400">
         Don&apos;t have an account?{" "}
-        <Link to="/register" className="auth-link-inline">
-          Register
+        <Link to="/register" className="font-semibold text-cyan-300 transition hover:text-cyan-200">
+          Create one
         </Link>
       </p>
     </AuthLayout>

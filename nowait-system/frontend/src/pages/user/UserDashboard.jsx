@@ -167,27 +167,29 @@ export default function UserDashboard() {
   }
 
   return (
-    <div className="space-y-5 sm:space-y-6">
+    <div className="space-y-6">
       <section className="user-dashboard-hero">
         <div className="user-dashboard-hero-glow" />
         <div className="relative grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
-          <div>
-            <div className="user-dashboard-label">Personal Queue Console</div>
-            <h1 className="mt-4 max-w-3xl text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-              {headline}
-            </h1>
-            <p className="mt-5 max-w-2xl text-base leading-8 text-slate-300">
+          <div className="space-y-4">
+            <div>
+              <div className="section-label">Personal Queue Console</div>
+              <h1 className="mt-3 max-w-3xl text-4xl font-bold tracking-tight text-white sm:text-5xl">
+                {headline}
+              </h1>
+            </div>
+            <p className="max-w-2xl text-base leading-relaxed text-slate-300">
               {supportCopy}
             </p>
 
-            <div className="mt-6 flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-2">
               <div className="user-dashboard-chip">
                 <BellIcon className="h-4 w-4 text-sky-200" />
-                <span>{notice}</span>
+                <span className="text-sm">{notice}</span>
               </div>
               <div className="user-dashboard-chip">
                 <SparkWaveIcon className="h-4 w-4 text-violet-200" />
-                <span>{socketConnected ? "Live queue online" : "Reconnecting to queue"}</span>
+                <span className="text-sm">{socketConnected ? "Live queue online" : "Reconnecting to queue"}</span>
               </div>
             </div>
           </div>
@@ -201,36 +203,34 @@ export default function UserDashboard() {
                   key={day.key}
                   type="button"
                   onClick={() => setSelectedDay(day.relativeLabel)}
-                  className={`rounded-[1.5rem] border p-4 text-left transition ${
+                  className={`rounded-xl border p-4 transition ${
                     active
-                      ? "border-cyan-400/35 bg-cyan-400/[0.12] shadow-[0_18px_40px_rgba(34,211,238,0.12)]"
-                      : "border-white/10 bg-white/[0.04] hover:border-white/20 hover:bg-white/[0.06]"
+                      ? "border-cyan-400/40 bg-cyan-400/10 shadow-lg shadow-cyan-400/10"
+                      : "border-white/10 bg-slate-950/40 hover:border-white/20 hover:bg-slate-950/50"
                   }`}
                 >
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="text-lg font-semibold text-white">{day.label}</div>
-                    <div className="text-xs uppercase tracking-[0.24em] text-slate-400">
-                      {day.displayDate}
-                    </div>
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div className="text-base font-semibold text-white">{day.label}</div>
+                    <div className="text-xs text-slate-400">{day.displayDate}</div>
                   </div>
-                  <div className="mt-4 grid grid-cols-3 gap-3 text-sm text-slate-300">
+                  <div className="grid grid-cols-3 gap-2 text-sm text-slate-300">
                     <div>
-                      <div className="user-dashboard-label">My token</div>
-                      <div className="mt-1 text-xl font-semibold text-white">
+                      <div className="card-label">My token</div>
+                      <div className="mt-1 text-lg font-semibold text-white">
                         {day.relativeLabel === selectedDay
                           ? formatToken(myToken?.tokenNumber)
                           : "---"}
                       </div>
                     </div>
                     <div>
-                      <div className="user-dashboard-label">Waiting</div>
-                      <div className="mt-1 text-xl font-semibold text-white">
+                      <div className="card-label">Waiting</div>
+                      <div className="mt-1 text-lg font-semibold text-white">
                         {day.waitingTokens}
                       </div>
                     </div>
                     <div>
-                      <div className="user-dashboard-label">Serving</div>
-                      <div className="mt-1 text-xl font-semibold text-white">
+                      <div className="card-label">Serving</div>
+                      <div className="mt-1 text-lg font-semibold text-white">
                         {formatToken(day.currentServingToken)}
                       </div>
                     </div>
@@ -242,7 +242,7 @@ export default function UserDashboard() {
         </div>
       </section>
 
-      <div className="grid gap-5 xl:grid-cols-[1.08fr_0.92fr]">
+      <div className="grid gap-6 xl:grid-cols-2">
         <TokenCard
           myToken={myToken}
           selectedDayInfo={selectedDayInfo}
@@ -256,7 +256,7 @@ export default function UserDashboard() {
         />
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[1.02fr_0.98fr]">
+      <div className="grid gap-6 xl:grid-cols-2">
         <QueueCard
           currentServing={currentServing}
           generatedAt={generatedAt}

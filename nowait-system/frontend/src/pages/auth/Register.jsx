@@ -111,26 +111,26 @@ export default function Register() {
       {successMessage ? (
         <div className="auth-banner auth-banner-success">
           <CheckCircleIcon className="mt-0.5 h-5 w-5 shrink-0" />
-          <div>{successMessage}</div>
+          <div className="text-sm">{successMessage}</div>
         </div>
       ) : null}
 
       {errorMessage ? (
         <div className="auth-banner auth-banner-error">
           <AlertCircleIcon className="mt-0.5 h-5 w-5 shrink-0" />
-          <div>{errorMessage}</div>
+          <div className="text-sm">{errorMessage}</div>
         </div>
       ) : null}
 
-      <form className="space-y-5" onSubmit={handleSubmit}>
+      <form className="space-y-6" onSubmit={handleSubmit}>
         <Input
           label="Username"
           icon={<UserIcon className="h-5 w-5" />}
           value={form.username}
           onChange={(event) => updateField("username", event.target.value)}
-          placeholder="Choose a username"
+          placeholder="choose a username"
           autoComplete="username"
-          helper="Use 3-32 lowercase characters. Numbers, periods, underscores, and hyphens are allowed."
+          helper="3-32 characters. Use lowercase, numbers, periods, underscores, or hyphens."
           error={fieldErrors.username}
         />
 
@@ -141,9 +141,9 @@ export default function Register() {
           showPasswordToggle
           value={form.password}
           onChange={(event) => updateField("password", event.target.value)}
-          placeholder="Create a password"
+          placeholder="create a strong password"
           autoComplete="new-password"
-          helper="Use at least 8 characters with at least one letter and one number."
+          helper="Minimum 8 characters with at least one letter and one number."
           error={fieldErrors.password}
         />
 
@@ -154,20 +154,20 @@ export default function Register() {
           showPasswordToggle
           value={form.confirmPassword}
           onChange={(event) => updateField("confirmPassword", event.target.value)}
-          placeholder="Re-enter your password"
+          placeholder="re-enter your password"
           autoComplete="new-password"
           error={fieldErrors.confirmPassword}
         />
 
-        <Button type="submit" loading={submitting}>
-          {submitting ? "Creating account..." : "Create user account"}
+        <Button type="submit" loading={submitting} variant="premium" fullWidth>
+          {submitting ? "Creating account..." : "Create Account"}
         </Button>
       </form>
 
       <p className="mt-6 text-center text-sm text-slate-400">
         Already have an account?{" "}
-        <Link to="/login" className="auth-link-inline">
-          Login
+        <Link to="/login" className="font-semibold text-cyan-300 transition hover:text-cyan-200">
+          Sign in here
         </Link>
       </p>
     </AuthLayout>

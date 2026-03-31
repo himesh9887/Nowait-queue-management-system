@@ -28,49 +28,66 @@ export default function Input({
   const hasLeftIcon = Boolean(icon);
 
   return (
-    <label className="grid gap-2.5 text-sm font-medium text-slate-200" htmlFor={inputId}>
-      {label ? <span className="auth-field-label">{label}</span> : null}
+    <label className="grid gap-2.5" htmlFor={inputId}>
+      {label && (
+        <span className="text-sm font-semibold text-slate-200">
+          {label}
+        </span>
+      )}
 
-      <div
-        className={`auth-input-shell ${hasLeftIcon ? "auth-input-has-icon" : ""} ${isSelect ? "auth-input-is-select" : ""}`}
-      >
-        {hasLeftIcon ? <span className="auth-input-icon">{icon}</span> : null}
+      <div className="relative flex items-center">
+        {hasLeftIcon && (
+          <span className="absolute left-4 flex text-slate-400">
+            {icon}
+          </span>
+        )}
 
         <Component
           id={inputId}
-          className={`auth-input-control ${className}`.trim()}
+          className={`
+            input-field
+            ${hasLeftIcon ? "pl-11" : ""}
+            ${isSelect ? "pr-10" : ""}
+            ${error ? "border-rose-400/50 ring-rose-400/20" : ""}
+            ${className}
+          `.trim()}
           type={as === "input" ? inputType : undefined}
           {...props}
         >
           {children}
         </Component>
 
-        {isPasswordField ? (
+        {isPasswordField && (
           <button
             type="button"
-            className="auth-input-toggle"
+            className="absolute right-3 flex text-slate-400 transition hover:text-slate-200"
             onClick={() => setShowPassword((current) => !current)}
             aria-label={showPassword ? "Hide password" : "Show password"}
+            tabIndex={-1}
           >
             {showPassword ? (
-              <EyeOffIcon className="h-[18px] w-[18px]" />
+              <EyeOffIcon className="h-5 w-5" />
             ) : (
-              <EyeIcon className="h-[18px] w-[18px]" />
+              <EyeIcon className="h-5 w-5" />
             )}
           </button>
-        ) : null}
+        )}
 
-        {isSelect ? (
-          <span className="auth-select-caret">
-            <ChevronDownIcon className="h-[18px] w-[18px]" />
+        {isSelect && (
+          <span className="pointer-events-none absolute right-3 flex text-slate-400">
+            <ChevronDownIcon className="h-5 w-5" />
           </span>
-        ) : null}
+        )}
       </div>
 
       {error ? (
-        <span className="auth-error-text">{error}</span>
+        <span className="text-xs font-medium text-rose-400/90">
+          {error}
+        </span>
       ) : helper ? (
-        <span className="auth-helper-text">{helper}</span>
+        <span className="text-xs text-slate-400">
+          {helper}
+        </span>
       ) : null}
     </label>
   );

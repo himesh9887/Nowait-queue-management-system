@@ -36,14 +36,14 @@ export default function WaitingCard({
         : 0;
   const queueMessage =
     myToken?.status === "waiting"
-      ? `${tokensAhead} ${tokensAhead === 1 ? "person is" : "people are"} ahead of you`
+      ? `${tokensAhead} ${tokensAhead === 1 ? "person is" : "people are"} ahead`
       : myToken?.status === "serving"
-        ? "No one is ahead of you right now"
-        : "This token is already complete";
+        ? "You are now being served"
+        : "This booking is complete";
   const etaLabel =
     myToken?.status === "waiting"
       ? queueHasNotStarted
-        ? "Queue start pending"
+        ? "Pending"
         : formatMinutes(estimatedWait)
       : myToken?.status === "serving"
         ? "Now"
@@ -57,99 +57,98 @@ export default function WaitingCard({
         ? "00:00"
         : "--:--";
   const etaSupportCopy = queueHasNotStarted
-    ? "The desk has not started serving yet. Your ETA will tighten as soon as the first token is called."
-    : `Based on token ${formatToken(currentServing?.tokenNumber)} being served and an average of ${avgServiceTime} minutes per token.`;
+    ? "Queue has not started yet. ETA will appear when service begins."
+    : `Based on token ${formatToken(currentServing?.tokenNumber)} being served.`;
   const countdownSupportCopy =
     myToken?.status === "waiting"
       ? queueHasNotStarted
-        ? "Countdown will begin automatically the moment service starts."
-        : "Updates every second between queue events so your ETA feels truly live."
+        ? "Countdown starts when service begins."
+        : "Updates every second for truly live ETA."
       : myToken?.status === "serving"
-        ? "Proceed to the service desk now."
-        : "This queue session has already completed.";
+        ? "Head to the desk now."
+        : "Session complete.";
 
   return (
-    <section className="user-dashboard-card">
+    <section className="glass-card space-y-6 p-6 sm:p-8">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <div className="user-dashboard-label">Waiting Card</div>
-          <h2 className="mt-3 text-2xl font-semibold tracking-tight text-white">
-            Live waiting time
-          </h2>
-          <p className="mt-3 max-w-xl text-sm leading-7 text-slate-300">
-            Queue position and ETA adjust automatically as tokens are served in
-            real time.
+          <div className="section-label">Live Waiting Time</div>
+          <h2 className="heading-md mt-2">Queue position and ETA</h2>
+          <p className="text-muted mt-2">
+            Queue position and ETA adjust automatically as tokens are served.
           </p>
         </div>
 
-        <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] text-sky-100">
-          <TimerIcon className="h-6 w-6" />
+        <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-cyan-300">
+          <TimerIcon className="h-5 w-5" />
         </div>
       </div>
 
-      <div className="mt-8 grid gap-4 sm:grid-cols-2">
-        <div className="user-wait-highlight">
-          <div className="user-dashboard-label">Tokens ahead</div>
-          <div className="mt-3 text-4xl font-semibold tracking-tight text-white">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="rounded-xl border border-white/8 bg-gradient-to-br from-slate-900 to-slate-950 p-4">
+          <div className="card-label">Tokens ahead</div>
+          <div className="mt-2 text-3xl font-bold text-white">
             {myToken?.status === "waiting" ? tokensAhead : 0}
           </div>
-          <div className="mt-2 text-sm leading-7 text-slate-300">{queueMessage}</div>
+          <div className="mt-2 text-sm text-slate-300">
+            {queueMessage}
+          </div>
         </div>
 
-        <div className="user-wait-highlight user-wait-highlight-accent">
-          <div className="user-dashboard-label">Estimated waiting time</div>
-          <div className="mt-3 text-4xl font-semibold tracking-tight text-white">
+        <div className="rounded-xl border border-cyan-400/20 bg-gradient-to-br from-cyan-950/40 to-blue-950/40 p-4">
+          <div className="card-label">Estimated wait</div>
+          <div className="mt-2 text-3xl font-bold text-white">
             {etaLabel}
           </div>
-          <div className="mt-2 text-sm leading-7 text-slate-300">
+          <div className="mt-2 text-sm text-slate-300">
             {etaSupportCopy}
           </div>
         </div>
       </div>
 
-      <div className="mt-5 rounded-[1.5rem] border border-cyan-300/12 bg-[linear-gradient(135deg,rgba(6,13,25,0.92),rgba(14,26,51,0.88),rgba(35,18,74,0.75))] p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="overflow-hidden rounded-xl border border-cyan-400/20 bg-gradient-to-r from-cyan-950/30 to-blue-950/30 p-5">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <div className="user-dashboard-label text-sky-100/80">Live countdown</div>
-            <div className="mt-3 text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+            <div className="card-label text-cyan-300">Live countdown</div>
+            <div className="mt-2 font-mono text-4xl font-bold text-white sm:text-5xl">
               {countdownLabel}
             </div>
           </div>
 
-          <div className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-xs uppercase tracking-[0.22em] text-slate-300">
+          <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold uppercase text-slate-300">
             {myToken?.status === "waiting"
               ? queueHasNotStarted
                 ? "Awaiting start"
-                : "Updating live"
+                : "Live"
               : myToken?.status === "serving"
-                ? "Serving now"
-                : "Completed"}
+                ? "Now"
+                : "Done"}
           </div>
         </div>
 
-        <div className="mt-3 text-sm leading-7 text-slate-300">
+        <p className="mt-2 text-sm text-slate-300">
           {countdownSupportCopy}
-        </div>
+        </p>
       </div>
 
-      <div className="mt-5 rounded-[1.5rem] border border-white/10 bg-slate-950/[0.55] p-4">
-        <div className="flex items-center justify-between gap-4 text-sm text-slate-300">
-          <span>Queue progress</span>
-          <span>
+      <div className="rounded-lg border border-white/8 bg-slate-950/40 p-4">
+        <div className="mb-3 flex items-center justify-between text-sm">
+          <span className="text-slate-300">Progress</span>
+          <span className="text-xs text-slate-500">
             {myToken?.status === "waiting"
               ? queueHasNotStarted
-                ? "Waiting for service start"
+                ? "Pending start"
                 : tokensAhead <= 2
-                  ? "Almost there"
-                  : "Moving steadily"
+                  ? "Almost your turn"
+                  : "Moving"
               : myToken?.status === "serving"
-                ? "It is your turn"
-                : "Queue closed"}
+                ? "Your turn"
+                : "Complete"}
           </span>
         </div>
-        <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/[0.06]">
+        <div className="h-2 overflow-hidden rounded-full bg-slate-900">
           <div
-            className="h-full rounded-full bg-[linear-gradient(90deg,rgba(56,189,248,0.95),rgba(129,140,248,0.95),rgba(168,85,247,0.92))] transition-all duration-500"
+            className="h-full rounded-full bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 transition-all"
             style={{ width: `${progressValue}%` }}
           />
         </div>
