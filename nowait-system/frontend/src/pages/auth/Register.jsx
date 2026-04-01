@@ -91,6 +91,7 @@ export default function Register() {
         state: {
           username: normalizeUsername(form.username),
           message: "Account created successfully. Sign in to continue.",
+          intendedRole: "user",
         },
       });
     } catch (error) {

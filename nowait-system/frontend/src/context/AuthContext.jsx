@@ -1,48 +1,18 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import {
   getCurrentUser,
   login as loginRequest,
   register as registerRequest,
 } from "../services/authService";
+import {
+  AUTH_SESSION_EXPIRED_EVENT,
+  clearStoredSession,
+  persistSession,
+  readStoredSession,
+  setAuthFlashMessage,
+} from "../utils/authSession";
 
-const STORAGE_KEY = "nowait-auth-session";
-const REMEMBER_KEY = "nowait-auth-remember";
 const AuthContext = createContext(null);
-
-function readStoredSession() {
-  try {
-    const rememberedValue = window.localStorage.getItem(REMEMBER_KEY);
-    const remembered = rememberedValue === null ? true : rememberedValue === "true";
-    const storage = remembered ? window.localStorage : window.sessionStorage;
-    const raw = storage.getItem(STORAGE_KEY);
-    const fallbackRaw =
-      rememberedValue === null ? window.localStorage.getItem(STORAGE_KEY) : null;
-
-    return raw || fallbackRaw
-      ? {
-          ...JSON.parse(raw || fallbackRaw),
-          remember: remembered,
-        }
-      : { token: null, user: null, remember: remembered };
-  } catch {
-    return { token: null, user: null, remember: true };
-  }
-}
-
-function persistSession(session, remember = true) {
-  const storage = remember ? window.localStorage : window.sessionStorage;
-  const fallbackStorage = remember ? window.sessionStorage : window.localStorage;
-
-  fallbackStorage.removeItem(STORAGE_KEY);
-  window.localStorage.setItem(REMEMBER_KEY, JSON.stringify(remember));
-  storage.setItem(STORAGE_KEY, JSON.stringify(session));
-}
-
-function clearStoredSession() {
-  window.localStorage.removeItem(STORAGE_KEY);
-  window.localStorage.removeItem(REMEMBER_KEY);
-  window.sessionStorage.removeItem(STORAGE_KEY);
-}
 
 export function AuthProvider({ children }) {
   const storedSession =
@@ -55,6 +25,43 @@ export function AuthProvider({ children }) {
     remember: storedSession.remember ?? true,
     loading: Boolean(storedSession.token),
   });
+  const sessionRef = useRef(session);
+
+  useEffect(() => {
+    sessionRef.current = session;
+  }, [session]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    function handleSessionExpired(event) {
+      if (!sessionRef.current.token) {
+        return;
+      }
+
+      clearStoredSession();
+      setAuthFlashMessage(
+        event.detail?.message || "Your session has expired. Please sign in again.",
+      );
+      setSession((current) => ({
+        token: null,
+        user: null,
+        remember: current.remember ?? true,
+        loading: false,
+      }));
+    }
+
+    window.addEventListener(AUTH_SESSION_EXPIRED_EVENT, handleSessionExpired);
+
+    return () => {
+      window.removeEventListener(
+        AUTH_SESSION_EXPIRED_EVENT,
+        handleSessionExpired,
+      );
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -89,6 +96,7 @@ export function AuthProvider({ children }) {
           setSession({
             token: null,
             user: null,
+            remember: session.remember ?? true,
             loading: false,
           });
         }
@@ -128,11 +136,12 @@ export function AuthProvider({ children }) {
 
   function logout() {
     clearStoredSession();
-    setSession({
+    setSession((current) => ({
       token: null,
       user: null,
+      remember: current.remember ?? true,
       loading: false,
-    });
+    }));
   }
 
   return (

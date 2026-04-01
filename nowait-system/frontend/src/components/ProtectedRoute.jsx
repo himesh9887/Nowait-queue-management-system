@@ -9,6 +9,8 @@ function getHomeByRole(role) {
 export default function ProtectedRoute({ allowedRoles }) {
   const { isAuthenticated, loading, user } = useAuth();
   const location = useLocation();
+  const intendedRole = allowedRoles?.length === 1 ? allowedRoles[0] : undefined;
+  const requestedPath = `${location.pathname}${location.search}${location.hash}`;
 
   if (loading) {
     return <LoadingScreen label="Restoring session..." />;
@@ -19,7 +21,13 @@ export default function ProtectedRoute({ allowedRoles }) {
       <Navigate
         to="/login"
         replace
-        state={{ from: location.pathname }}
+        state={{
+          from: requestedPath,
+          intendedRole,
+          notice: intendedRole
+            ? `Sign in to continue to the ${intendedRole} workspace.`
+            : "Sign in to continue.",
+        }}
       />
     );
   }
