@@ -45,7 +45,7 @@ export default function DisplayBoard() {
                   ? "/user-dashboard"
                   : "/login"
             }
-            className="secondary-button"
+            className="secondary-button w-full justify-center sm:w-auto"
           >
             {user ? "Back to dashboard" : "Back to login"}
           </Link>

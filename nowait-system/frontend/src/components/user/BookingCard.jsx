@@ -37,7 +37,7 @@ export default function BookingCard({
           </p>
         </div>
 
-        <div className="user-dashboard-chip">
+        <div className="user-dashboard-chip w-full sm:w-auto">
           <span
             className={`h-2 w-2 rounded-full ${
               socketConnected
@@ -77,8 +77,8 @@ export default function BookingCard({
                   ? "border-sky-300/35 bg-sky-400/10 shadow-[0_18px_40px_rgba(14,165,233,0.12)]"
                   : "border-white/10 bg-slate-950/40 hover:border-white/20 hover:bg-slate-950/55"
               }`}
-            >
-              <div className="flex items-center justify-between gap-3">
+          >
+              <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <div className="font-semibold text-white">{day.label}</div>
                   <div className="mt-1 text-xs text-slate-400">{day.displayDate}</div>
@@ -100,7 +100,7 @@ export default function BookingCard({
                   : "Reserve tomorrow in advance so you are ready before service starts."}
               </div>
 
-              <div className="mt-4 grid grid-cols-3 gap-3">
+              <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
                 <div className="rounded-2xl border border-white/8 bg-white/3 p-3">
                   <div className="card-label">Waiting</div>
                   <div className="mt-1 text-lg font-semibold text-white">{day.waitingTokens}</div>
@@ -111,7 +111,7 @@ export default function BookingCard({
                     {formatToken(day.currentServingToken)}
                   </div>
                 </div>
-                <div className="rounded-2xl border border-white/8 bg-white/3 p-3">
+                <div className="col-span-2 rounded-2xl border border-white/8 bg-white/3 p-3 sm:col-span-1">
                   <div className="card-label">ETA</div>
                   <div className="mt-1 text-lg font-semibold text-white">
                     {day.queueForecast ? formatMinutes(day.queueForecast) : "--"}
@@ -124,7 +124,7 @@ export default function BookingCard({
       </div>
 
       <div className="rounded-3xl border border-white/10 bg-slate-950/62 p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2 text-sm font-medium text-slate-200">
             <CalendarClockIcon className="h-4 w-4" />
             <span>{selectedDayInfo?.label || "Selected"} queue overview</span>

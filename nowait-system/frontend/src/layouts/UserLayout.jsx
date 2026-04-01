@@ -39,14 +39,14 @@ export default function UserLayout() {
 
   return (
     <div className="page-shell">
-      <div className="mx-auto max-w-7xl px-4 py-4 sm:px-5 lg:px-8 lg:py-6">
-        <header className="user-dashboard-card user-layout-header mb-6 p-5 sm:p-6">
+      <div className="mx-auto max-w-7xl px-3 py-3 sm:px-5 sm:py-4 lg:px-8 lg:py-6">
+        <header className="user-dashboard-card user-layout-header mb-5 p-4 sm:mb-6 sm:p-6">
           <div className="relative flex flex-col gap-6">
             <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
               <div className="space-y-4">
                 <div className="section-label">User Queue Portal</div>
                 <div>
-                  <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+                  <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-4xl">
                     Hello, {user?.displayName || user?.username}
                   </h1>
                   <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300 sm:text-base">
@@ -127,12 +127,12 @@ export default function UserLayout() {
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-2">
-              <div className="user-dashboard-chip">
+            <div className="grid gap-2 sm:flex sm:flex-wrap">
+              <div className="user-dashboard-chip w-full sm:w-auto">
                 <SparkWaveIcon className="h-4 w-4 text-sky-200" />
                 <span>{socketConnected ? "Live queue connected" : "Queue connection retrying"}</span>
               </div>
-              <div className="user-dashboard-chip">
+              <div className="user-dashboard-chip w-full sm:w-auto">
                 <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-[0.24em] text-slate-300">
                   Tip
                 </span>

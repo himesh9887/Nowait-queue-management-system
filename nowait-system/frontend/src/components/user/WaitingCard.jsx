@@ -70,7 +70,7 @@ export default function WaitingCard({
 
   return (
     <section className="user-dashboard-card space-y-6 p-5 sm:p-6">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <div className="section-label">Wait Tracker</div>
           <h2 className="heading-md mt-2">Live wait estimate</h2>
@@ -127,10 +127,10 @@ export default function WaitingCard({
       </div>
 
       <div className="overflow-hidden rounded-[1.6rem] border border-cyan-400/20 bg-[linear-gradient(135deg,rgba(8,47,73,0.6),rgba(15,23,42,0.82),rgba(30,41,59,0.8))] p-5">
-        <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="card-label text-cyan-300">Live countdown</div>
-            <div className="mt-2 font-mono text-4xl font-bold text-white sm:text-5xl">
+            <div className="mt-2 font-mono text-[clamp(2.4rem,14vw,3.75rem)] font-bold text-white sm:text-5xl">
               {countdownLabel}
             </div>
           </div>

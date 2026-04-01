@@ -21,7 +21,7 @@ export default function StatsCards({ cards }) {
               </div>
             </div>
 
-            <div className="mt-6 flex items-center justify-between gap-3 text-xs uppercase tracking-[0.24em]">
+            <div className="mt-6 flex flex-col items-start gap-2 text-xs uppercase tracking-[0.24em] sm:flex-row sm:items-center sm:justify-between sm:gap-3">
               <span className="text-slate-500">{card.meta}</span>
               <span className={card.accentClassName}>{card.badge}</span>
             </div>

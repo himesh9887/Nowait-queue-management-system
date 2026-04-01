@@ -26,8 +26,8 @@ export default function AuthLayout({
       <div className="auth-orb auth-orb-violet" />
       <div className="auth-orb auth-orb-indigo" />
 
-      <div className="relative mx-auto flex min-h-[calc(100vh-2rem)] w-full max-w-7xl items-center">
-        <div className="grid w-full gap-4 lg:grid-cols-[1.05fr_0.95fr] lg:gap-6">
+      <div className="relative mx-auto flex min-h-[calc(100dvh-1.5rem)] w-full max-w-7xl items-start py-1 sm:min-h-[calc(100dvh-2rem)] sm:items-center sm:py-0">
+        <div className="grid w-full gap-5 lg:grid-cols-[1.05fr_0.95fr] lg:gap-6">
           <section className="order-2 hidden lg:flex auth-desktop-brand auth-brand-enter">
             <div className="auth-desktop-brand-glow" />
 
@@ -131,9 +131,9 @@ export default function AuthLayout({
                   </div>
                 </div>
 
-                <div className="mt-6">
+                <div className="mt-5">
                   <div className="section-label">Queue Experience</div>
-                  <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white">
+                  <h1 className="mt-3 text-[1.9rem] font-semibold tracking-tight text-white sm:text-3xl">
                     Skip the Line. Save Your Time.
                   </h1>
                   <p className="mt-3 max-w-md text-sm leading-7 text-slate-300">
@@ -156,7 +156,7 @@ export default function AuthLayout({
               <div className="auth-form-card">
                 <div className="auth-form-header">
                   <div className="section-label">{eyebrow}</div>
-                  <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-[2.15rem]">
+                  <h2 className="mt-4 text-[1.9rem] font-semibold tracking-tight text-white sm:text-[2.15rem]">
                     {title}
                   </h2>
                   <p className="mt-4 max-w-xl text-sm leading-7 text-slate-300 sm:text-base">

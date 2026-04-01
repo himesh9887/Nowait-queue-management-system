@@ -296,12 +296,12 @@ export default function UserDashboard() {
         <div className="user-dashboard-hero-glow" />
         <div className="relative grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_360px]">
           <div className="space-y-5">
-            <div className="flex flex-wrap gap-2">
-              <div className="user-dashboard-chip">
+            <div className="grid gap-2 sm:flex sm:flex-wrap">
+              <div className="user-dashboard-chip w-full sm:w-auto">
                 <BellIcon className="h-4 w-4 text-sky-200" />
                 <span className="text-sm">{notice}</span>
               </div>
-              <div className="user-dashboard-chip">
+              <div className="user-dashboard-chip w-full sm:w-auto">
                 <SparkWaveIcon className="h-4 w-4 text-violet-200" />
                 <span className="text-sm">{socketConnected ? "Live queue online" : "Reconnecting to queue"}</span>
               </div>
@@ -309,7 +309,7 @@ export default function UserDashboard() {
 
             <div>
               <div className="section-label">Your Queue Summary</div>
-              <h1 className="mt-3 max-w-3xl text-3xl font-bold tracking-tight text-white sm:text-5xl">
+              <h1 className="mt-3 max-w-3xl text-2xl font-bold tracking-tight text-white sm:text-5xl">
                 {headline}
               </h1>
             </div>
@@ -321,7 +321,7 @@ export default function UserDashboard() {
               {heroMetrics.map((item) => (
                 <article key={item.label} className="user-hero-metric">
                   <div className="user-dashboard-label">{item.label}</div>
-                  <div className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-[1.85rem]">
+                  <div className="mt-2 break-words text-[1.55rem] font-semibold tracking-tight text-white sm:text-[1.85rem]">
                     {item.value}
                   </div>
                   <p className="mt-2 text-sm text-slate-400">{item.detail}</p>
@@ -330,10 +330,10 @@ export default function UserDashboard() {
             </div>
           </div>
 
-          <aside className="user-dashboard-card user-dashboard-card-strong space-y-5 p-5 sm:p-6">
+          <aside className="user-dashboard-card user-dashboard-card-strong space-y-5 p-4 sm:p-6">
             <div>
               <div className="section-label">What To Do Now</div>
-              <h2 className="mt-3 text-2xl font-semibold tracking-tight text-white">
+              <h2 className="mt-3 text-xl font-semibold tracking-tight text-white sm:text-2xl">
                 {actionContent.title}
               </h2>
               <p className="mt-3 text-sm leading-7 text-slate-300">
@@ -360,7 +360,7 @@ export default function UserDashboard() {
               <div className="mt-2 text-lg font-semibold text-white">
                 {selectedSummary?.label || selectedDayInfo?.label || "Today"}
               </div>
-              <div className="mt-2 flex items-center justify-between gap-3 text-sm text-slate-400">
+              <div className="mt-2 flex flex-col items-start gap-1 text-sm text-slate-400 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                 <span>{selectedSummary?.displayDate || "--"}</span>
                 <span>{selectedSummary?.waitingTokens ?? 0} waiting</span>
               </div>

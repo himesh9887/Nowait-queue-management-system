@@ -69,7 +69,7 @@ export default function ControlPanel({
           </p>
         </div>
 
-        <div className="admin-chip">
+        <div className="admin-chip w-full justify-center sm:w-auto">
           <span
             className={`h-2 w-2 rounded-full ${
               socketConnected ? "bg-emerald-300" : "bg-amber-300"
@@ -85,7 +85,7 @@ export default function ControlPanel({
             <TicketIcon className="h-4 w-4" />
             Current serving
           </div>
-          <div className="mt-3 text-3xl font-semibold tracking-tight text-white">
+          <div className="mt-3 break-words text-[1.9rem] font-semibold tracking-tight text-white sm:text-3xl">
             {formatToken(currentServing?.tokenNumber)}
           </div>
         </div>
@@ -95,7 +95,7 @@ export default function ControlPanel({
             <QueueIcon className="h-4 w-4" />
             Next up
           </div>
-          <div className="mt-3 text-3xl font-semibold tracking-tight text-white">
+          <div className="mt-3 break-words text-[1.9rem] font-semibold tracking-tight text-white sm:text-3xl">
             {formatToken(nextUp?.tokenNumber)}
           </div>
         </div>
@@ -105,7 +105,7 @@ export default function ControlPanel({
             <ClockIcon className="h-4 w-4" />
             Queue forecast
           </div>
-          <div className="mt-3 text-3xl font-semibold tracking-tight text-white">
+          <div className="mt-3 text-[1.9rem] font-semibold tracking-tight text-white sm:text-3xl">
             {formatMinutes(queueForecast)}
           </div>
         </div>

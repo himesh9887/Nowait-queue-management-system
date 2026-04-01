@@ -8,7 +8,7 @@ export default function GlassPanel({
   return (
     <section className={`glass-card ${className}`}>
       {(eyebrow || title || description) && (
-        <div className="px-6 pt-6 sm:px-8 sm:pt-8">
+        <div className="px-5 pt-5 sm:px-8 sm:pt-8">
           {eyebrow ? <div className="section-label">{eyebrow}</div> : null}
           {title ? (
             <h2 className="mt-3 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
@@ -22,7 +22,13 @@ export default function GlassPanel({
           ) : null}
         </div>
       )}
-      <div className={eyebrow || title || description ? "px-6 pb-6 pt-6 sm:px-8 sm:pb-8" : "p-6 sm:p-8"}>
+      <div
+        className={
+          eyebrow || title || description
+            ? "px-5 pb-5 pt-5 sm:px-8 sm:pb-8 sm:pt-6"
+            : "p-5 sm:p-8"
+        }
+      >
         {children}
       </div>
     </section>

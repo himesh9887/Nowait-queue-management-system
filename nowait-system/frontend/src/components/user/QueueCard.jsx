@@ -25,7 +25,7 @@ export default function QueueCard({
           </p>
         </div>
 
-        <div className="user-dashboard-chip">
+        <div className="user-dashboard-chip w-full sm:w-auto">
           <span
             className={`h-2 w-2 rounded-full ${
               socketConnected
@@ -51,7 +51,7 @@ export default function QueueCard({
             </div>
           </div>
 
-          <div className="mt-6 text-5xl font-bold tracking-tight text-white sm:text-6xl">
+          <div className="mt-6 break-words text-[clamp(2.8rem,15vw,4.5rem)] font-bold tracking-tight text-white sm:text-6xl">
             {formatToken(currentServing?.tokenNumber)}
           </div>
           <div className="mt-3 text-sm leading-7 text-slate-300">
@@ -117,7 +117,7 @@ export default function QueueCard({
                 upcomingTokens.map((token, index) => (
                   <div
                     key={token.id}
-                    className="flex items-center justify-between gap-4 rounded-[1.2rem] border border-white/8 bg-white/3 px-4 py-3"
+                    className="flex flex-col items-start gap-4 rounded-[1.2rem] border border-white/8 bg-white/3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-slate-900/70 text-sm font-semibold text-white">

@@ -47,7 +47,7 @@ function SidebarSurface({
   mobile = false,
 }) {
   return (
-    <div className="admin-sidebar flex h-full flex-col">
+    <div className="admin-sidebar flex h-full max-h-full flex-col overflow-y-auto">
       <div className="flex items-start justify-between gap-4">
         <div>
           <div className="admin-kicker">NoWait Admin</div>
@@ -205,7 +205,7 @@ export default function Sidebar({
         />
 
         <aside
-          className={`absolute inset-y-0 left-0 w-[86vw] max-w-sm p-3 transition duration-300 ${
+          className={`absolute inset-y-0 left-0 w-[min(22rem,calc(100vw-1rem))] p-3 transition duration-300 ${
             mobileOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >
@@ -225,7 +225,7 @@ export default function Sidebar({
         </aside>
       </div>
 
-      <aside className="hidden xl:sticky xl:top-6 xl:block xl:h-[calc(100vh-3rem)]">
+      <aside className="hidden xl:sticky xl:top-6 xl:block xl:h-[calc(100dvh-3rem)]">
         <SidebarSurface
           activeSection={activeSection}
           daySummaries={daySummaries}

@@ -61,7 +61,7 @@ export default function QueueTable({ description, title, tokens }) {
                     : "border-white/10 bg-white/3"
                 }`}
               >
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <div className="text-xs uppercase tracking-[0.24em] text-slate-500">
                       Token

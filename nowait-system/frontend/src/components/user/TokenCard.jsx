@@ -37,7 +37,7 @@ export default function TokenCard({ myToken, selectedDayInfo, socketConnected })
           </p>
         </div>
 
-        <div className="user-dashboard-chip">
+        <div className="user-dashboard-chip w-full sm:w-auto">
           <span
             className={`h-2 w-2 rounded-full ${
               socketConnected
@@ -58,7 +58,7 @@ export default function TokenCard({ myToken, selectedDayInfo, socketConnected })
               <TicketIcon className="h-6 w-6" />
             </div>
 
-            <div className="mt-6 text-5xl font-bold tracking-tight text-white sm:text-6xl">
+            <div className="mt-6 break-words text-[clamp(2.8rem,15vw,4.5rem)] font-bold tracking-tight text-white sm:text-6xl">
               {formatToken(myToken?.tokenNumber)}
             </div>
 

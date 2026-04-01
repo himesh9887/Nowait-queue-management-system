@@ -260,7 +260,7 @@ export default function AdminDashboard() {
   return (
     <>
       <div className="mx-auto max-w-430">
-        <div className="grid gap-6 xl:grid-cols-[310px_minmax(0,1fr)]">
+        <div className="grid gap-5 xl:grid-cols-[310px_minmax(0,1fr)] xl:gap-6">
           <Sidebar
             activeSection={activeSection}
             daySummaries={daySummaries}
@@ -272,7 +272,7 @@ export default function AdminDashboard() {
             user={user}
           />
 
-          <main className="min-w-0 space-y-6">
+          <main className="min-w-0 space-y-5 sm:space-y-6">
             <header className="admin-panel admin-fade-up overflow-visible">
               <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
                 <div className="flex items-start gap-4">
@@ -298,12 +298,12 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
-                  <div className="admin-chip">
+                  <div className="admin-chip w-full justify-center sm:w-auto">
                     <CalendarIcon className="h-4 w-4 text-cyan-200" />
                     {formatLongDate(new Date())}
                   </div>
 
-                  <div className="admin-chip">
+                  <div className="admin-chip w-full justify-center sm:w-auto">
                     <span
                       className={`h-2 w-2 rounded-full ${
                         refreshing
@@ -316,11 +316,11 @@ export default function AdminDashboard() {
                     {refreshing ? "Refreshing" : socketConnected ? "Live" : "Offline"}
                   </div>
 
-                  <div className="relative">
+                  <div className="relative w-full sm:w-auto">
                     <button
                       type="button"
                       onClick={() => setShowNotifications((current) => !current)}
-                      className="admin-chip relative"
+                      className="admin-chip relative w-full justify-between sm:w-auto sm:justify-center"
                     >
                       <BellIcon className="h-4 w-4 text-cyan-200" />
                       Alerts
@@ -330,7 +330,7 @@ export default function AdminDashboard() {
                     </button>
 
                     {showNotifications ? (
-                      <div className="absolute right-0 top-[calc(100%+0.75rem)] z-30 w-[min(24rem,80vw)] rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(11,17,31,0.96),rgba(8,11,21,0.98))] p-4 shadow-[0_28px_80px_rgba(2,6,23,0.5)] backdrop-blur-3xl">
+                      <div className="absolute left-0 right-0 top-[calc(100%+0.75rem)] z-30 w-full rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(11,17,31,0.96),rgba(8,11,21,0.98))] p-4 shadow-[0_28px_80px_rgba(2,6,23,0.5)] backdrop-blur-3xl sm:left-auto sm:right-0 sm:w-[min(24rem,80vw)]">
                         <div className="text-xs uppercase tracking-[0.24em] text-slate-500">
                           Notifications
                         </div>
@@ -361,7 +361,7 @@ export default function AdminDashboard() {
               <div className="flex flex-col gap-6 2xl:flex-row 2xl:items-end 2xl:justify-between">
                 <div className="relative z-10">
                   <div className="admin-kicker">Operations Overview</div>
-                  <h2 className="mt-3 max-w-3xl text-3xl font-semibold tracking-tight text-white">
+                  <h2 className="mt-3 max-w-3xl text-2xl font-semibold tracking-tight text-white sm:text-3xl">
                     Premium visibility across queue flow, booking health, and live
                     service activity.
                   </h2>
@@ -396,7 +396,7 @@ export default function AdminDashboard() {
                             : "border-white/10 bg-white/4 hover:-translate-y-0.5 hover:border-white/16 hover:bg-white/6"
                         }`}
                       >
-                        <div className="flex items-start justify-between gap-4">
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                           <div>
                             <div className="text-lg font-semibold text-white">{day.label}</div>
                             <div className="mt-1 text-xs uppercase tracking-[0.24em] text-slate-500">
@@ -414,7 +414,7 @@ export default function AdminDashboard() {
                           </div>
                         </div>
 
-                        <div className="mt-5 grid grid-cols-3 gap-3">
+                        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
                           <div className="rounded-[1.2rem] border border-white/8 bg-slate-950/48 p-3">
                             <div className="text-xs uppercase tracking-[0.2em] text-slate-500">
                               Waiting
@@ -431,7 +431,7 @@ export default function AdminDashboard() {
                               {formatToken(day.currentServingToken)}
                             </div>
                           </div>
-                          <div className="rounded-[1.2rem] border border-white/8 bg-slate-950/48 p-3">
+                          <div className="col-span-2 rounded-[1.2rem] border border-white/8 bg-slate-950/48 p-3 sm:col-span-1">
                             <div className="text-xs uppercase tracking-[0.2em] text-slate-500">
                               Completed
                             </div>
@@ -471,7 +471,7 @@ export default function AdminDashboard() {
                   <button
                     type="button"
                     onClick={() => void handleRefresh()}
-                    className="secondary-button"
+                    className="secondary-button w-full justify-center sm:w-auto"
                   >
                     {refreshing ? "Refreshing..." : "Refresh dashboard"}
                   </button>
@@ -484,7 +484,7 @@ export default function AdminDashboard() {
                       <div className="text-xs uppercase tracking-[0.24em] text-emerald-100/80">
                         Current Serving Token
                       </div>
-                      <div className="mt-6 text-7xl font-semibold tracking-tight text-white">
+                      <div className="mt-6 break-words text-[clamp(3.25rem,18vw,5rem)] font-semibold tracking-tight text-white">
                         {formatToken(currentServing?.tokenNumber)}
                       </div>
                       <div className="mt-4 text-lg text-emerald-50/90">
@@ -504,7 +504,7 @@ export default function AdminDashboard() {
                           key={token.id}
                           className="rounded-[1.6rem] border border-white/10 bg-white/4 p-4"
                         >
-                          <div className="flex items-center justify-between gap-4">
+                          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                               <div className="text-xs uppercase tracking-[0.24em] text-slate-500">
                                 Next in queue
@@ -518,7 +518,7 @@ export default function AdminDashboard() {
                             </div>
                           </div>
 
-                          <div className="mt-4 flex items-center justify-between gap-4 text-sm text-slate-300">
+                          <div className="mt-4 flex flex-col gap-1 text-sm text-slate-300 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                             <span>{token.bookedBy || "Walk-in"}</span>
                             <span>{token.estimatedWaitingTime} min ETA</span>
                           </div>
@@ -601,8 +601,8 @@ export default function AdminDashboard() {
                       onClick={() => setSelectedDay(day.relativeLabel)}
                       className={
                         selectedDay === day.relativeLabel
-                          ? "primary-button"
-                          : "secondary-button"
+                          ? "primary-button w-full justify-center sm:w-auto"
+                          : "secondary-button w-full justify-center sm:w-auto"
                       }
                     >
                       {day.label}
@@ -625,7 +625,9 @@ export default function AdminDashboard() {
                       key={item.key}
                       type="button"
                       className={
-                        filter === item.key ? "primary-button" : "secondary-button"
+                        filter === item.key
+                          ? "primary-button w-full justify-center sm:w-auto"
+                          : "secondary-button w-full justify-center sm:w-auto"
                       }
                       onClick={() => setFilter(item.key)}
                     >
@@ -778,10 +780,10 @@ export default function AdminDashboard() {
       </div>
 
       {showResetDialog ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 px-4 backdrop-blur-md">
-          <div className="w-full max-w-lg rounded-4xl border border-white/10 bg-[linear-gradient(180deg,rgba(11,17,31,0.96),rgba(8,11,21,0.98))] p-6 shadow-[0_28px_80px_rgba(2,6,23,0.55)]">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/80 px-4 py-4 backdrop-blur-md sm:items-center">
+          <div className="w-full max-w-lg rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(11,17,31,0.96),rgba(8,11,21,0.98))] p-5 shadow-[0_28px_80px_rgba(2,6,23,0.55)] sm:rounded-4xl sm:p-6">
             <div className="admin-kicker">Confirm Reset</div>
-            <h3 className="mt-3 text-2xl font-semibold tracking-tight text-white">
+            <h3 className="mt-3 text-xl font-semibold tracking-tight text-white sm:text-2xl">
               Reset the {selectedDayInfo?.label?.toLowerCase() || "selected"} queue?
             </h3>
             <p className="mt-4 text-sm leading-7 text-slate-400">

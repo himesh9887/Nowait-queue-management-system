@@ -17,10 +17,16 @@
 
   html {
     @apply scroll-smooth;
+    background-color: #020617;
   }
 
   body {
     @apply min-h-screen bg-transparent text-slate-100 antialiased;
+    overflow-x: hidden;
+  }
+
+  #root {
+    min-height: 100%;
   }
 
   a {
@@ -42,6 +48,7 @@
   /* Page Backgrounds */
   .page-shell {
     @apply min-h-screen;
+    min-height: 100dvh;
     background:
       radial-gradient(circle at top, rgba(14, 165, 233, 0.12), transparent 28%),
       linear-gradient(180deg, #020617 0%, #020817 45%, #020617 100%);
@@ -74,15 +81,15 @@
   }
 
   .heading-lg {
-    @apply text-3xl font-bold tracking-tight text-white;
+    @apply text-2xl font-bold tracking-tight text-white sm:text-3xl;
   }
 
   .heading-md {
-    @apply text-2xl font-semibold tracking-tight text-white;
+    @apply text-xl font-semibold tracking-tight text-white sm:text-2xl;
   }
 
   .heading-sm {
-    @apply text-lg font-semibold tracking-tight text-white;
+    @apply text-base font-semibold tracking-tight text-white sm:text-lg;
   }
 
   .text-muted {
@@ -231,6 +238,10 @@
     @apply my-2 border-t border-white/10;
   }
 
+  .metric-tile {
+    @apply rounded-[1.5rem] border border-white/10 bg-white/4 p-4 shadow-[0_12px_30px_rgba(15,23,42,0.18)];
+  }
+
   /* Animated Border */
   .animated-border {
     position: relative;
@@ -258,6 +269,7 @@
   .auth-shell {
     position: relative;
     min-height: 100vh;
+    min-height: 100dvh;
     overflow: hidden;
     padding: 1rem;
     background:
@@ -617,6 +629,7 @@
 
   @media (max-width: 639px) {
     .auth-shell {
+      min-height: 100dvh;
       padding-top: 0.75rem;
       padding-bottom: 0.75rem;
     }
@@ -629,6 +642,20 @@
 
     .auth-mobile-brand {
       padding: 1rem;
+    }
+
+    .auth-form-card,
+    .user-dashboard-hero,
+    .user-dashboard-card,
+    .admin-panel,
+    .admin-sidebar {
+      border-radius: 1.75rem;
+    }
+
+    .user-token-stage,
+    .user-serving-board {
+      padding-left: 1.25rem;
+      padding-right: 1.25rem;
     }
   }
 
@@ -775,6 +802,7 @@
   .admin-shell {
     position: relative;
     min-height: 100vh;
+    min-height: 100dvh;
     overflow: hidden;
     background:
       radial-gradient(circle at 10% 12%, rgba(56, 189, 248, 0.16), transparent 0 22%),

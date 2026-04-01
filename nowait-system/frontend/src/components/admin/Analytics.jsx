@@ -136,7 +136,7 @@ export default function Analytics({ bookings, selectedDayInfo, stats }) {
           </p>
         </div>
 
-        <div className="admin-chip">
+        <div className="admin-chip w-full justify-center sm:w-auto">
           <CalendarIcon className="h-4 w-4 text-cyan-200" />
           {selectedDayInfo?.displayDate || "Selected day"}
         </div>
@@ -180,25 +180,27 @@ export default function Analytics({ bookings, selectedDayInfo, stats }) {
           </div>
 
           {hourlyLoad.length ? (
-            <div className="mt-8 flex h-64 items-end gap-3">
-              {hourlyLoad.map((item) => (
-                <div
-                  key={item.label}
-                  className="flex min-w-0 flex-1 flex-col items-center gap-3"
-                >
-                  <div className="flex h-full w-full items-end">
-                    <div
-                      className="w-full rounded-t-[1.25rem] border border-cyan-300/18 bg-[linear-gradient(180deg,rgba(56,189,248,0.92),rgba(6,182,212,0.38))] shadow-[0_18px_40px_rgba(34,211,238,0.18)]"
-                      style={{
-                        height: `${Math.max((item.count / peakShare) * 100, 12)}%`,
-                      }}
-                    />
+            <div className="mt-8 overflow-x-auto pb-2">
+              <div className="flex h-64 min-w-[32rem] items-end gap-3 sm:min-w-0">
+                {hourlyLoad.map((item) => (
+                  <div
+                    key={item.label}
+                    className="flex min-w-0 flex-1 flex-col items-center gap-3"
+                  >
+                    <div className="flex h-full w-full items-end">
+                      <div
+                        className="w-full rounded-t-[1.25rem] border border-cyan-300/18 bg-[linear-gradient(180deg,rgba(56,189,248,0.92),rgba(6,182,212,0.38))] shadow-[0_18px_40px_rgba(34,211,238,0.18)]"
+                        style={{
+                          height: `${Math.max((item.count / peakShare) * 100, 12)}%`,
+                        }}
+                      />
+                    </div>
+                    <div className="text-center text-xs leading-5 text-slate-400">
+                      {item.label}
+                    </div>
                   </div>
-                  <div className="text-center text-xs leading-5 text-slate-400">
-                    {item.label}
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           ) : (
             <div className="mt-6 rounded-[1.55rem] border border-dashed border-white/12 bg-white/3 px-6 py-10 text-center text-sm text-slate-400">

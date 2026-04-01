@@ -140,7 +140,7 @@ export default function Login() {
           error={fieldErrors.password}
         />
 
-        <div className="flex items-center justify-between gap-4 rounded-lg border border-white/8 bg-slate-950/40 px-4 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[1.2rem] border border-white/8 bg-slate-950/40 px-4 py-3">
           <label className="flex items-center gap-3 text-sm text-slate-300">
             <input
               type="checkbox"

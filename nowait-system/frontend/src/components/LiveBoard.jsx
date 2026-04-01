@@ -15,11 +15,11 @@ export default function LiveBoard({
       className="p-0"
     >
       <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-        <div className="glass-card-strong pulse-ring px-6 py-8 text-center sm:px-8">
+        <div className="glass-card-strong pulse-ring px-5 py-6 text-center sm:px-8 sm:py-8">
           <div className="text-sm uppercase tracking-[0.32em] text-cyan-200/80">
             Now serving
           </div>
-          <div className="mt-6 text-7xl font-semibold tracking-tight text-white sm:text-8xl">
+          <div className="mt-6 break-words text-[clamp(3.25rem,17vw,5rem)] font-semibold tracking-tight text-white sm:text-8xl">
             {formatToken(currentServing?.tokenNumber)}
           </div>
           <div className="mt-4 text-base text-slate-300">
@@ -32,7 +32,7 @@ export default function LiveBoard({
             <div className="text-sm uppercase tracking-[0.24em] text-slate-400">
               Next up
             </div>
-            <div className="mt-3 text-3xl font-semibold text-white">
+            <div className="mt-3 break-words text-[clamp(1.9rem,10vw,2.4rem)] font-semibold text-white">
               {formatToken(nextUp?.tokenNumber)}
             </div>
             <div className="mt-2 text-sm text-slate-300">
