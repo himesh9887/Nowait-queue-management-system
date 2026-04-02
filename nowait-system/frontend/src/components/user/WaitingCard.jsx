@@ -4,7 +4,6 @@ import {
   formatMinutes,
   formatToken,
 } from "../../utils/formatters";
-import { TimerIcon } from "./UserIcons";
 
 export default function WaitingCard({
   avgServiceTime,
@@ -67,35 +66,39 @@ export default function WaitingCard({
       : myToken?.status === "serving"
         ? "Head to the desk now."
         : "Session complete.";
+  const summaryLabel =
+    myToken?.status === "waiting"
+      ? queueHasNotStarted
+        ? "Queue has not started yet."
+        : tokensAhead <= 2
+          ? "Almost your turn."
+          : `${tokensAhead} ${tokensAhead === 1 ? "person is" : "people are"} ahead of you.`
+      : myToken?.status === "serving"
+        ? "Your token is being served now."
+        : "This booking is complete.";
 
   return (
     <section className="user-dashboard-card space-y-6 p-5 sm:p-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <div className="section-label">Wait Tracker</div>
-          <h2 className="heading-md mt-2">Live wait estimate</h2>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
-            See how many people are ahead, how fast the desk is moving, and when your turn should arrive.
-          </p>
-        </div>
-
-        <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-cyan-300">
-          <TimerIcon className="h-5 w-5" />
-        </div>
+      <div>
+        <div className="section-label">Wait Tracker</div>
+        <h2 className="heading-md mt-2">Live wait estimate</h2>
+        <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
+          Watch your current wait, live countdown, and desk activity without refreshing.
+        </p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <div className="user-metric-tile">
-          <div className="card-label">Tokens ahead</div>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div className="user-simple-stat">
+          <div className="card-label">People ahead</div>
           <div className="mt-2 text-3xl font-bold text-white">
-            {myToken?.status === "waiting" ? tokensAhead : 0}
+            {myToken?.status === "waiting" ? tokensAhead : myToken?.status === "serving" ? 0 : "--"}
           </div>
           <div className="mt-2 text-sm text-slate-400">
             {queueMessage}
           </div>
         </div>
 
-        <div className="user-metric-tile">
+        <div className="user-simple-stat">
           <div className="card-label">Estimated wait</div>
           <div className="mt-2 text-3xl font-bold text-white">
             {etaLabel}
@@ -105,23 +108,13 @@ export default function WaitingCard({
           </div>
         </div>
 
-        <div className="user-metric-tile">
+        <div className="user-simple-stat">
           <div className="card-label">Now serving</div>
           <div className="mt-2 text-3xl font-bold text-white">
             {formatToken(currentServing?.tokenNumber)}
           </div>
           <div className="mt-2 text-sm text-slate-400">
             Current desk token
-          </div>
-        </div>
-
-        <div className="user-metric-tile">
-          <div className="card-label">Avg. service time</div>
-          <div className="mt-2 text-3xl font-bold text-white">
-            {avgServiceTime ? formatMinutes(avgServiceTime) : "--"}
-          </div>
-          <div className="mt-2 text-sm text-slate-400">
-            Typical time per token
           </div>
         </div>
       </div>
@@ -151,53 +144,19 @@ export default function WaitingCard({
         </p>
       </div>
 
-      <div className="rounded-[1.4rem] border border-white/10 bg-slate-950/62 p-4">
-        <div className="mb-3 flex items-center justify-between text-sm">
-          <span className="text-slate-300">Progress</span>
-          <span className="text-xs text-slate-500">
-            {myToken?.status === "waiting"
-              ? queueHasNotStarted
-                ? "Pending start"
-                : tokensAhead <= 2
-                  ? "Almost your turn"
-                  : "Moving"
-              : myToken?.status === "serving"
-                ? "Your turn"
-                : "Complete"}
+      <div className="user-simple-panel">
+        <div className="flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
+          <span className="font-medium text-white">{summaryLabel}</span>
+          <span className="text-slate-400">
+            Typical pace: {avgServiceTime ? formatMinutes(avgServiceTime) : "--"} per token
           </span>
         </div>
-        <div className="h-2 overflow-hidden rounded-full bg-slate-900">
+
+        <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-900">
           <div
             className="h-full rounded-full bg-linear-to-r from-cyan-400 via-blue-400 to-purple-400 transition-all"
             style={{ width: `${progressValue}%` }}
           />
-        </div>
-
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <div className="rounded-2xl border border-white/8 bg-white/3 p-3">
-            <div className="card-label">Current state</div>
-            <div className="mt-2 text-sm font-semibold text-white">
-              {myToken?.status === "waiting"
-                ? queueHasNotStarted
-                  ? "Queue not started yet"
-                  : tokensAhead <= 2
-                    ? "Almost your turn"
-                    : "Queue is moving"
-                : myToken?.status === "serving"
-                  ? "Go to the desk"
-                  : "Booking finished"}
-            </div>
-          </div>
-          <div className="rounded-2xl border border-white/8 bg-white/3 p-3">
-            <div className="card-label">Helpful note</div>
-            <div className="mt-2 text-sm font-semibold text-white">
-              {myToken?.status === "waiting"
-                ? "Keep this page open for live updates."
-                : myToken?.status === "serving"
-                  ? "Keep your token visible."
-                  : "Invoice remains available below."}
-            </div>
-          </div>
         </div>
       </div>
     </section>

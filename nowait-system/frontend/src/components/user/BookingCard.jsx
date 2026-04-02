@@ -23,7 +23,7 @@ export default function BookingCard({
   }
 
   return (
-    <section className="user-dashboard-card user-dashboard-card-strong space-y-6 p-5 sm:p-6">
+    <section className="user-dashboard-card space-y-5 p-5 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="section-label">Book A Token</div>
@@ -33,11 +33,11 @@ export default function BookingCard({
               : "Choose when you want to join the queue"}
           </h2>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
-            Select a day, review the live load, and confirm your booking when you are ready.
+            Pick a day, review the queue load, and confirm your booking.
           </p>
         </div>
 
-        <div className="user-dashboard-chip w-full sm:w-auto">
+        <div className="user-dashboard-chip">
           <span
             className={`h-2 w-2 rounded-full ${
               socketConnected
@@ -45,7 +45,9 @@ export default function BookingCard({
                 : "bg-slate-500"
             }`}
           />
-          <span className="text-xs font-medium">{socketConnected ? "Booking available" : "Waiting for sync"}</span>
+          <span className="text-xs font-medium">
+            {socketConnected ? "Booking available" : "Waiting for sync"}
+          </span>
         </div>
       </div>
 
@@ -72,16 +74,16 @@ export default function BookingCard({
               key={day.key}
               type="button"
               onClick={() => onSelectDay(day.relativeLabel)}
-              className={`rounded-3xl border p-5 text-left transition ${
+              className={`rounded-3xl border p-4 text-left transition ${
                 active
                   ? "border-sky-300/35 bg-sky-400/10 shadow-[0_18px_40px_rgba(14,165,233,0.12)]"
                   : "border-white/10 bg-slate-950/40 hover:border-white/20 hover:bg-slate-950/55"
               }`}
-          >
+            >
               <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <div className="font-semibold text-white">{day.label}</div>
-                  <div className="mt-1 text-xs text-slate-400">{day.displayDate}</div>
+                  <div className="text-lg font-semibold text-white">{day.label}</div>
+                  <div className="mt-1 text-sm text-slate-400">{day.displayDate}</div>
                 </div>
                 <div
                   className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] ${
@@ -90,75 +92,57 @@ export default function BookingCard({
                       : "bg-white/5 text-slate-300 ring-1 ring-white/10"
                   }`}
                 >
-                  {active ? "Selected" : "Tap to choose"}
+                  {active ? "Selected" : "Available"}
                 </div>
               </div>
 
-              <div className="mt-4 text-sm leading-relaxed text-slate-300">
-                {day.canServe
-                  ? "Join the active service queue and get a live ETA immediately."
-                  : "Reserve tomorrow in advance so you are ready before service starts."}
-              </div>
-
-              <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                <div className="rounded-2xl border border-white/8 bg-white/3 p-3">
-                  <div className="card-label">Waiting</div>
-                  <div className="mt-1 text-lg font-semibold text-white">{day.waitingTokens}</div>
-                </div>
-                <div className="rounded-2xl border border-white/8 bg-white/3 p-3">
-                  <div className="card-label">Serving</div>
-                  <div className="mt-1 text-lg font-semibold text-white">
-                    {formatToken(day.currentServingToken)}
-                  </div>
-                </div>
-                <div className="col-span-2 rounded-2xl border border-white/8 bg-white/3 p-3 sm:col-span-1">
-                  <div className="card-label">ETA</div>
-                  <div className="mt-1 text-lg font-semibold text-white">
-                    {day.queueForecast ? formatMinutes(day.queueForecast) : "--"}
-                  </div>
-                </div>
+              <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-300">
+                <span>{day.waitingTokens} waiting</span>
+                <span>Serving {formatToken(day.currentServingToken)}</span>
+                <span>ETA {day.queueForecast ? formatMinutes(day.queueForecast) : "--"}</span>
               </div>
             </button>
           );
         })}
       </div>
 
-      <div className="rounded-3xl border border-white/10 bg-slate-950/62 p-5">
-        <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2 text-sm font-medium text-slate-200">
-            <CalendarClockIcon className="h-4 w-4" />
-            <span>{selectedDayInfo?.label || "Selected"} queue overview</span>
-          </div>
-          <div className="rounded-full border border-white/10 bg-white/4 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-300">
-            {summary?.displayDate || "--"}
-          </div>
-        </div>
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          <div className="rounded-2xl border border-white/8 bg-white/3 p-4">
-            <div className="card-label">People waiting</div>
-            <div className="mt-1 text-lg font-semibold text-white">
-              {summary?.waitingTokens ?? 0}
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+        <div className="user-simple-panel">
+          <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2 text-sm font-medium text-slate-200">
+              <CalendarClockIcon className="h-4 w-4" />
+              <span>{selectedDayInfo?.label || "Selected"} queue overview</span>
+            </div>
+            <div className="rounded-full border border-white/10 bg-white/4 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-300">
+              {summary?.displayDate || "--"}
             </div>
           </div>
-          <div className="rounded-2xl border border-white/8 bg-white/3 p-4">
-            <div className="card-label">Now serving</div>
-            <div className="mt-1 text-lg font-semibold text-white">
-              {formatToken(summary?.currentServingToken)}
-            </div>
-          </div>
-          <div className="rounded-2xl border border-white/8 bg-white/3 p-4">
-            <div className="card-label">Estimated entry</div>
-            <div className="mt-1 text-lg font-semibold text-white">
-              {summary?.queueForecast ? formatMinutes(summary.queueForecast) : "--"}
-            </div>
-          </div>
-        </div>
-      </div>
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <p className="max-w-xl text-sm leading-6 text-slate-400">
-          Only one active token can be booked at a time. Your place is assigned instantly once booking succeeds.
-        </p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <div className="user-simple-stat">
+              <div className="card-label">People waiting</div>
+              <div className="mt-1 text-lg font-semibold text-white">
+                {summary?.waitingTokens ?? 0}
+              </div>
+            </div>
+            <div className="user-simple-stat">
+              <div className="card-label">Now serving</div>
+              <div className="mt-1 text-lg font-semibold text-white">
+                {formatToken(summary?.currentServingToken)}
+              </div>
+            </div>
+            <div className="user-simple-stat">
+              <div className="card-label">Estimated wait</div>
+              <div className="mt-1 text-lg font-semibold text-white">
+                {summary?.queueForecast ? formatMinutes(summary.queueForecast) : "--"}
+              </div>
+            </div>
+          </div>
+
+          <p className="mt-3 text-sm leading-6 text-slate-400">
+            Only one active token can be booked at a time.
+          </p>
+        </div>
 
         <Button
           type="button"
@@ -166,7 +150,7 @@ export default function BookingCard({
           disabled={hasActiveToken || !socketConnected}
           onClick={handleBook}
           variant="primary"
-          className="w-full justify-center sm:min-w-55 sm:w-auto"
+          className="w-full justify-center lg:min-w-55"
         >
           {booking
             ? "Booking..."

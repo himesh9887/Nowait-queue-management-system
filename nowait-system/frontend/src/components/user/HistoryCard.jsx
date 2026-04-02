@@ -3,7 +3,6 @@ import {
   formatLongDate,
   formatToken,
 } from "../../utils/formatters";
-import { HistoryIcon } from "./UserIcons";
 
 function getStatusClassName(item) {
   if (item.wasSkipped) {
@@ -23,70 +22,61 @@ function getStatusClassName(item) {
 
 export default function HistoryCard({ items }) {
   return (
-    <section className="user-dashboard-card">
+    <section className="user-dashboard-card space-y-5 p-5 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <div className="user-dashboard-label">History</div>
-          <h2 className="mt-3 text-2xl font-semibold tracking-tight text-white">
+          <div className="section-label">History</div>
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-white">
             Previous bookings
           </h2>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
-            Review older visits, booking dates, and final queue outcomes in one place.
+            Review your recent visits and their final status.
           </p>
-        </div>
-
-        <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-violet-100">
-          <HistoryIcon className="h-6 w-6" />
         </div>
       </div>
 
       {items.length ? (
-        <div className="mt-8 grid gap-4 lg:grid-cols-2">
+        <div className="space-y-3">
           {items.slice(0, 6).map((item) => (
-            <article
-              key={item.id}
-              className="rounded-[1.6rem] border border-white/10 bg-slate-950/58 p-5 shadow-[0_14px_36px_rgba(15,23,42,0.18)]"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <div className="text-2xl font-semibold tracking-tight text-white">
-                    {formatToken(item.tokenNumber)}
-                  </div>
-                  <div className="mt-2 text-sm text-slate-400">
-                    {formatLongDate(item.bookingDate)}
-                  </div>
+            <article key={item.id} className="user-list-row">
+              <div>
+                <div className="text-lg font-semibold tracking-tight text-white">
+                  {formatToken(item.tokenNumber)}
                 </div>
+                <div className="mt-1 text-sm text-slate-400">
+                  {formatLongDate(item.bookingDate)}
+                </div>
+                <div className="mt-1 text-sm text-slate-400">
+                  {item.bookingLabel || "Booked"} queue
+                </div>
+              </div>
 
+              <div className="flex flex-col gap-3 sm:items-end">
                 <span
-                  className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] ${getStatusClassName(item)}`}
+                  className={`w-fit rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] ${getStatusClassName(item)}`}
                 >
                   {item.wasSkipped ? "Skipped" : item.status}
                 </span>
-              </div>
 
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                <div className="rounded-[1.2rem] border border-white/8 bg-white/3 p-3">
-                  <div className="user-dashboard-label">Booked</div>
-                  <div className="mt-2 text-sm font-medium text-white">
+                <div>
+                  <div className="text-sm text-slate-400">Booked</div>
+                  <div className="text-sm font-medium text-white">
                     {formatDateTime(item.createdAt)}
                   </div>
                 </div>
-                <div className="rounded-[1.2rem] border border-white/8 bg-white/3 p-3">
-                  <div className="user-dashboard-label">Finished</div>
-                  <div className="mt-2 text-sm font-medium text-white">
+
+                <div>
+                  <div className="text-sm text-slate-400">Finished</div>
+                  <div className="text-sm font-medium text-white">
                     {formatDateTime(item.completedAt || item.updatedAt)}
                   </div>
                 </div>
-              </div>
-
-              <div className="mt-4 text-sm text-slate-300">
-                {item.bookingLabel || "Booked"} queue
               </div>
             </article>
           ))}
         </div>
       ) : (
-        <div className="user-empty-state mt-8">
+        <div className="user-empty-state">
           <div className="text-lg font-semibold text-white">No bookings yet</div>
           <div className="mt-2 max-w-md text-sm leading-7 text-slate-400">
             Your previous visits will appear here after you start using the queue.

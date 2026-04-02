@@ -4,7 +4,7 @@ import InvoiceCard from "../../components/user/InvoiceCard";
 import QueueCard from "../../components/user/QueueCard";
 import TokenCard from "../../components/user/TokenCard";
 import WaitingCard from "../../components/user/WaitingCard";
-import { BellIcon, SparkWaveIcon } from "../../components/user/UserIcons";
+import { BellIcon } from "../../components/user/UserIcons";
 import { useAuth } from "../../context/AuthContext";
 import { useQueue } from "../../context/QueueContext";
 import { downloadInvoicePdf } from "../../utils/invoicePdf";
@@ -12,34 +12,14 @@ import { formatMinutes, formatToken } from "../../utils/formatters";
 
 function UserDashboardSkeleton() {
   return (
-    <div className="space-y-5 sm:space-y-6">
-      <section className="user-dashboard-hero animate-pulse">
-        <div className="user-dashboard-hero-glow" />
-        <div className="relative grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
-          <div className="space-y-4">
-            <div className="h-4 w-40 rounded-full bg-white/10" />
-            <div className="h-12 max-w-2xl rounded-3xl bg-white/10" />
-            <div className="h-24 max-w-3xl rounded-3xl bg-white/6" />
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <div className="h-28 rounded-3xl bg-white/8" />
-              <div className="h-28 rounded-3xl bg-white/8" />
-              <div className="h-28 rounded-3xl bg-white/8" />
-              <div className="h-28 rounded-3xl bg-white/8" />
-            </div>
-          </div>
-          <div className="h-90 rounded-4xl bg-white/5" />
-        </div>
-      </section>
-
-      <div className="h-105 rounded-4xl border border-white/10 bg-white/4 animate-pulse" />
+    <div className="space-y-6">
+      <div className="h-78 rounded-4xl border border-white/10 bg-white/4 animate-pulse" />
+      <div className="h-64 rounded-4xl border border-white/10 bg-white/4 animate-pulse" />
       <div className="grid gap-5 xl:grid-cols-2">
-        <div className="h-96 rounded-4xl border border-white/10 bg-white/4 animate-pulse" />
-        <div className="h-96 rounded-4xl border border-white/10 bg-white/4 animate-pulse" />
+        <div className="h-72 rounded-4xl border border-white/10 bg-white/4 animate-pulse" />
+        <div className="h-72 rounded-4xl border border-white/10 bg-white/4 animate-pulse" />
       </div>
-      <div className="grid gap-5 xl:grid-cols-2">
-        <div className="h-80 rounded-4xl border border-white/10 bg-white/4 animate-pulse" />
-        <div className="h-80 rounded-4xl border border-white/10 bg-white/4 animate-pulse" />
-      </div>
+      <div className="h-72 rounded-4xl border border-white/10 bg-white/4 animate-pulse" />
     </div>
   );
 }
@@ -62,18 +42,18 @@ function getHeadline(myToken, selectedDayInfo) {
 
 function getSupportCopy(myToken, selectedDayInfo) {
   if (!myToken) {
-    return `Book a ${selectedDayInfo?.label?.toLowerCase() || "selected"} token to unlock your live queue status, waiting time, invoice, and booking history.`;
+    return `Choose ${selectedDayInfo?.label?.toLowerCase() || "a day"}, book your token, and track everything from this page.`;
   }
 
   if (myToken.status === "serving") {
-    return "Your token is being served now. Keep this screen open in case you need your invoice or booking details.";
+    return "Your token is being served now. Keep your token number ready and move to the desk.";
   }
 
   if (myToken.status === "waiting") {
-    return `${myToken.tokensAhead} ${myToken.tokensAhead === 1 ? "person is" : "people are"} ahead of you, and your queue position will keep updating automatically.`;
+    return `${myToken.tokensAhead} ${myToken.tokensAhead === 1 ? "person is" : "people are"} ahead of you. Your status updates here automatically.`;
   }
 
-  return "Your completed booking details remain available below, and you can book a new token whenever you are ready.";
+  return "Your booking is complete. You can still review the details below or book again when needed.";
 }
 
 function getNotice(myToken, socketConnected) {
@@ -116,63 +96,41 @@ function getStatusLabel(myToken) {
   return "Completed";
 }
 
-function getActionContent(myToken, socketConnected, selectedDayInfo) {
+function getNextStep(myToken, socketConnected, selectedDayInfo) {
   if (!socketConnected) {
     return {
-      title: "Connection is retrying",
-      body: "Your last queue snapshot is still visible. Fresh updates will continue as soon as the live connection returns.",
-      steps: [
-        "Keep this page open for automatic reconnection.",
-        "Avoid refreshing unless the screen stays offline for long.",
-        "Watch the queue section below for the latest visible update.",
-      ],
+      title: "Wait for live sync to return",
+      body: "Your latest queue snapshot is still visible. Fresh updates will continue automatically once the connection comes back.",
     };
   }
 
   if (!myToken) {
     return {
       title: `Book for ${selectedDayInfo?.label || "today"}`,
-      body: "Pick a day, review the current queue load, and confirm your booking when you are ready.",
-      steps: [
-        "Choose today or tomorrow in the booking card.",
-        "Check how many people are waiting before you join.",
-        "Tap book token to reserve your place instantly.",
-      ],
+      body: "Use the booking card below, check the queue load, and confirm when you are ready.",
     };
   }
 
   if (myToken.status === "serving") {
     return {
       title: "Go to the service desk now",
-      body: "Your token is already being served. Keep your token visible and move to the counter.",
-      steps: [
-        "Head to the desk immediately.",
-        "Keep this screen or your token number ready.",
-        "Download your invoice after service if needed.",
-      ],
+      body: "Your token is already being served. Keep this page open or remember your token number.",
     };
   }
 
   if (myToken.status === "waiting") {
     return {
-      title: "Stay ready for your turn",
-      body: "Your position and ETA will keep updating here in real time while the queue moves forward.",
-      steps: [
-        "Keep notifications on if you want an audio alert.",
-        "Check tokens ahead and countdown below.",
-        "Start moving to the desk once only a few people remain.",
-      ],
+      title: myToken.tokensAhead <= 2 ? "Stay ready for your turn" : "You are in the queue",
+      body:
+        myToken.tokensAhead <= 2
+          ? "Only a few people remain ahead of you. Stay close and keep your token number visible."
+          : "Keep this page open to watch your queue position and wait time update automatically.",
     };
   }
 
   return {
     title: "This booking is complete",
-    body: "You can still review the invoice and history below, or book a fresh token when you need another visit.",
-    steps: [
-      "Download the invoice if you need a receipt.",
-      "Review previous visits in your history.",
-      "Book a new token whenever you are ready.",
-    ],
+    body: "You can review the invoice and history below, or book a fresh token when you need another visit.",
   };
 }
 
@@ -205,46 +163,29 @@ export default function UserDashboard() {
   const supportCopy = getSupportCopy(myToken, selectedDayInfo);
   const notice = getNotice(myToken, socketConnected);
   const statusLabel = getStatusLabel(myToken);
-  const actionContent = getActionContent(myToken, socketConnected, selectedDayInfo);
-  const heroMetrics = hasToken
+  const nextStep = getNextStep(myToken, socketConnected, selectedDayInfo);
+  const summaryMetrics = hasToken
     ? [
         {
           label: "Token",
           value: formatToken(myToken?.tokenNumber),
-          detail: myToken?.bookingLabel || selectedDayInfo?.label || "Selected queue",
+          detail: myToken?.bookingLabel || selectedSummary?.label || "Selected queue",
         },
         {
           label: "Status",
           value: statusLabel,
-          detail: socketConnected ? "Live sync active" : "Waiting for reconnection",
+          detail: notice,
         },
         {
-          label: myToken?.status === "waiting" ? "People ahead" : "Queue position",
-          value:
-            myToken?.status === "waiting"
-              ? String(myToken?.tokensAhead ?? 0)
-              : myToken?.status === "serving"
-                ? "Now"
-                : myToken?.queuePosition
-                  ? `#${myToken.queuePosition}`
-                  : "Done",
-          detail:
-            myToken?.status === "waiting"
-              ? "Live queue updates"
-              : myToken?.status === "serving"
-                ? "Please go to desk"
-                : "Booking closed",
-        },
-        {
-          label: myToken?.status === "waiting" ? "Estimated wait" : "Booked on",
+          label: myToken?.status === "waiting" ? "Estimated wait" : "Queue day",
           value:
             myToken?.status === "waiting"
               ? formatMinutes(myToken?.estimatedWaitingTime)
-              : selectedDayInfo?.label || myToken?.bookingLabel || "Selected day",
+              : myToken?.bookingLabel || selectedSummary?.label || "Selected",
           detail:
             myToken?.status === "waiting"
-              ? `Serving ${formatToken(currentServing?.tokenNumber)} right now`
-              : "Queue day",
+              ? `${myToken?.tokensAhead ?? 0} ahead of you`
+              : selectedSummary?.displayDate || "Booking details below",
         },
       ]
     : [
@@ -260,13 +201,51 @@ export default function UserDashboard() {
         },
         {
           label: "Now serving",
-          value: formatToken(selectedSummary?.currentServingToken),
-          detail: "Current desk token",
+          value: formatToken(selectedSummary?.currentServingToken || currentServing?.tokenNumber),
+          detail: selectedSummary?.displayDate || "Current desk token",
+        },
+      ];
+  const quickFacts = hasToken
+    ? [
+        {
+          label: "Selected day",
+          value:
+            myToken?.bookingLabel || selectedSummary?.label || selectedDayInfo?.label || "Today",
+        },
+        {
+          label: "Queue position",
+          value:
+            myToken?.status === "serving"
+              ? "Now"
+              : myToken?.queuePosition
+                ? `#${myToken.queuePosition}`
+                : "Completed",
+        },
+        {
+          label: "Now serving",
+          value: formatToken(currentServing?.tokenNumber),
+        },
+        {
+          label: "Connection",
+          value: socketConnected ? "Live updates on" : "Reconnecting",
+        },
+      ]
+    : [
+        {
+          label: "Selected day",
+          value: selectedSummary?.label || selectedDayInfo?.label || "Today",
+        },
+        {
+          label: "People waiting",
+          value: `${selectedSummary?.waitingTokens ?? 0}`,
         },
         {
           label: "Average pace",
           value: stats.avgServiceTime ? formatMinutes(stats.avgServiceTime) : "--",
-          detail: "Typical time per token",
+        },
+        {
+          label: "Connection",
+          value: socketConnected ? "Live updates on" : "Reconnecting",
         },
       ];
 
@@ -292,80 +271,58 @@ export default function UserDashboard() {
 
   return (
     <div className="space-y-6">
-      <section className="user-dashboard-hero">
-        <div className="user-dashboard-hero-glow" />
-        <div className="relative grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_360px]">
-          <div className="space-y-5">
-            <div className="grid gap-2 sm:flex sm:flex-wrap">
-              <div className="user-dashboard-chip w-full sm:w-auto">
-                <BellIcon className="h-4 w-4 text-sky-200" />
-                <span className="text-sm">{notice}</span>
-              </div>
-              <div className="user-dashboard-chip w-full sm:w-auto">
-                <SparkWaveIcon className="h-4 w-4 text-violet-200" />
-                <span className="text-sm">{socketConnected ? "Live queue online" : "Reconnecting to queue"}</span>
-              </div>
-            </div>
-
-            <div>
-              <div className="section-label">Your Queue Summary</div>
-              <h1 className="mt-3 max-w-3xl text-2xl font-bold tracking-tight text-white sm:text-5xl">
-                {headline}
-              </h1>
-            </div>
-            <p className="max-w-2xl text-sm leading-7 text-slate-300 sm:text-base">
+      <section className="user-dashboard-card space-y-5 p-5 sm:p-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="max-w-3xl">
+            <div className="section-label">Current Status</div>
+            <h1 className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-4xl">
+              {headline}
+            </h1>
+            <p className="mt-3 text-sm leading-7 text-slate-300 sm:text-base">
               {supportCopy}
             </p>
-
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              {heroMetrics.map((item) => (
-                <article key={item.label} className="user-hero-metric">
-                  <div className="user-dashboard-label">{item.label}</div>
-                  <div className="mt-2 break-words text-[1.55rem] font-semibold tracking-tight text-white sm:text-[1.85rem]">
-                    {item.value}
-                  </div>
-                  <p className="mt-2 text-sm text-slate-400">{item.detail}</p>
-                </article>
-              ))}
-            </div>
           </div>
 
-          <aside className="user-dashboard-card user-dashboard-card-strong space-y-5 p-4 sm:p-6">
-            <div>
-              <div className="section-label">What To Do Now</div>
-              <h2 className="mt-3 text-xl font-semibold tracking-tight text-white sm:text-2xl">
-                {actionContent.title}
-              </h2>
-              <p className="mt-3 text-sm leading-7 text-slate-300">
-                {actionContent.body}
-              </p>
-            </div>
+          <div className="user-dashboard-chip self-start">
+            <BellIcon className="h-4 w-4 text-sky-200" />
+            <span>{notice}</span>
+          </div>
+        </div>
 
-            <div className="space-y-3">
-              {actionContent.steps.map((step, index) => (
-                <div
-                  key={step}
-                  className="flex items-start gap-3 rounded-[1.35rem] border border-white/10 bg-white/4 px-4 py-3"
-                >
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-sky-300/20 bg-sky-400/10 text-sm font-semibold text-sky-100">
-                    {index + 1}
-                  </div>
-                  <p className="pt-1 text-sm leading-6 text-slate-200">{step}</p>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {summaryMetrics.map((item) => (
+            <article key={item.label} className="user-simple-stat">
+              <div className="user-dashboard-label">{item.label}</div>
+              <div className="mt-2 break-words text-2xl font-semibold tracking-tight text-white sm:text-[1.9rem]">
+                {item.value}
+              </div>
+              <p className="mt-2 text-sm text-slate-400">{item.detail}</p>
+            </article>
+          ))}
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="user-simple-panel">
+            <div className="card-label">Next step</div>
+            <div className="mt-2 text-lg font-semibold text-white">
+              {nextStep.title}
+            </div>
+            <p className="mt-2 text-sm leading-6 text-slate-300">
+              {nextStep.body}
+            </p>
+          </div>
+
+          <div className="user-simple-panel">
+            <div className="card-label">Quick info</div>
+            <div className="user-key-value-list mt-4">
+              {quickFacts.map((item) => (
+                <div key={item.label} className="user-key-value-row">
+                  <span className="user-dashboard-label">{item.label}</span>
+                  <span className="user-key-value-value">{item.value}</span>
                 </div>
               ))}
             </div>
-
-            <div className="rounded-[1.35rem] border border-white/10 bg-slate-950/50 p-4">
-              <div className="user-dashboard-label">Selected day</div>
-              <div className="mt-2 text-lg font-semibold text-white">
-                {selectedSummary?.label || selectedDayInfo?.label || "Today"}
-              </div>
-              <div className="mt-2 flex flex-col items-start gap-1 text-sm text-slate-400 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-                <span>{selectedSummary?.displayDate || "--"}</span>
-                <span>{selectedSummary?.waitingTokens ?? 0} waiting</span>
-              </div>
-            </div>
-          </aside>
+          </div>
         </div>
       </section>
 
