@@ -54,6 +54,33 @@ export default function ControlPanel({
     canServeSelectedDay && !busyAction && !currentServing && nextUp,
   );
   const canAdvanceQueue = Boolean(canServeSelectedDay && !busyAction && currentServing);
+  const controlState = !canServeSelectedDay
+    ? {
+        title: `${selectedDayInfo?.label || "Selected queue"} is in planning mode`,
+        detail:
+          "You can review the queue and forecast, but service actions remain locked until this day becomes active.",
+        toneClassName: "border-amber-300/18 bg-amber-400/8 text-amber-100",
+      }
+    : currentServing
+      ? {
+          title: `Serving ${formatToken(currentServing.tokenNumber)} right now`,
+          detail:
+            "Use Next Token when service is complete, or Skip Token if this customer does not respond.",
+          toneClassName: "border-emerald-300/18 bg-emerald-400/8 text-emerald-100",
+        }
+      : nextUp
+        ? {
+            title: `Queue is ready to start with ${formatToken(nextUp.tokenNumber)}`,
+            detail:
+              "No token is currently active. Start Serving to begin the selected day queue.",
+            toneClassName: "border-cyan-300/18 bg-cyan-400/[0.08] text-cyan-50",
+          }
+        : {
+            title: "No waiting token is ready yet",
+            detail:
+              "The queue is clear for now. New user bookings will appear here automatically.",
+            toneClassName: "border-white/10 bg-white/4 text-slate-100",
+          };
 
   return (
     <section className="admin-panel admin-fade-up">
@@ -77,6 +104,11 @@ export default function ControlPanel({
           />
           {socketConnected ? "Live control sync" : "Syncing controls"}
         </div>
+      </div>
+
+      <div className={`mt-6 rounded-[1.75rem] border px-5 py-4 ${controlState.toneClassName}`}>
+        <div className="text-sm font-semibold">{controlState.title}</div>
+        <p className="mt-2 text-sm leading-6 opacity-85">{controlState.detail}</p>
       </div>
 
       <div className="mt-6 grid gap-3 sm:grid-cols-3">
@@ -110,13 +142,6 @@ export default function ControlPanel({
           </div>
         </div>
       </div>
-
-      {!canServeSelectedDay ? (
-        <div className="mt-6 rounded-[1.75rem] border border-amber-300/18 bg-amber-400/8 px-5 py-4 text-sm leading-6 text-amber-100">
-          {selectedDayInfo?.label || "This queue"} is visible for planning, but
-          actions stay locked until that day becomes active.
-        </div>
-      ) : null}
 
       <div className="mt-6 grid gap-3 xl:grid-cols-2">
         <ActionButton

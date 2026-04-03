@@ -20,7 +20,8 @@ export default function QueueCard({
           <div className="section-label">Live Queue</div>
           <h2 className="heading-md mt-2">Desk activity right now</h2>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
-            See what token is being served and who is coming next.
+            See what token is being served, how many people are waiting, and who is
+            expected next.
           </p>
         </div>
 
@@ -36,32 +37,50 @@ export default function QueueCard({
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div className="user-simple-stat">
-          <div className="card-label">Now serving</div>
-          <div className="mt-2 text-3xl font-bold text-white">
-            {formatToken(currentServing?.tokenNumber)}
-          </div>
-          <div className="mt-2 text-sm text-slate-400">
-            {selectedDayInfo?.label || "Selected"} queue
+      <div className="grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)]">
+        <div className="relative overflow-hidden rounded-[1.85rem] border border-emerald-300/18 bg-[linear-gradient(155deg,rgba(16,185,129,0.16),rgba(8,11,21,0.92)_55%)] p-5">
+          <div className="absolute -right-12 -top-12 h-36 w-36 rounded-full bg-emerald-400/20 blur-3xl" />
+          <div className="relative z-10">
+            <div className="card-label text-emerald-100/80">Now serving</div>
+            <div className="mt-4 break-words text-[clamp(3rem,14vw,4.6rem)] font-semibold tracking-tight text-white">
+              {formatToken(currentServing?.tokenNumber)}
+            </div>
+            <div className="mt-3 text-sm leading-6 text-emerald-50/85">
+              {selectedDayInfo?.label || "Selected"} queue is currently at the live desk.
+            </div>
+            <div className="mt-5 rounded-[1.25rem] border border-emerald-300/18 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-50">
+              Updated {formatDateTime(generatedAt)}
+            </div>
           </div>
         </div>
 
-        <div className="user-simple-stat">
-          <div className="card-label">People in queue</div>
-          <div className="mt-2 text-3xl font-bold text-white">
-            {selectedDayInfo?.waitingTokens ?? queue.length}
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div className="user-simple-stat">
+            <div className="card-label">Queue day</div>
+            <div className="mt-2 text-3xl font-bold text-white">
+              {selectedDayInfo?.label || "Today"}
+            </div>
+            <div className="mt-2 text-sm text-slate-400">
+              {selectedDayInfo?.displayDate || "Selected queue date"}
+            </div>
           </div>
-          <div className="mt-2 text-sm text-slate-400">Active waiting tokens</div>
-        </div>
 
-        <div className="user-simple-stat">
-          <div className="card-label">Queue forecast</div>
-          <div className="mt-2 text-3xl font-bold text-white">
-            {selectedDayInfo?.queueForecast ? formatMinutes(selectedDayInfo.queueForecast) : "--"}
+          <div className="user-simple-stat">
+            <div className="card-label">People in queue</div>
+            <div className="mt-2 text-3xl font-bold text-white">
+              {selectedDayInfo?.waitingTokens ?? queue.length}
+            </div>
+            <div className="mt-2 text-sm text-slate-400">Active waiting tokens</div>
           </div>
-          <div className="mt-2 text-sm text-slate-400">
-            Updated {formatDateTime(generatedAt)}
+
+          <div className="user-simple-stat">
+            <div className="card-label">Queue forecast</div>
+            <div className="mt-2 text-3xl font-bold text-white">
+              {selectedDayInfo?.queueForecast ? formatMinutes(selectedDayInfo.queueForecast) : "--"}
+            </div>
+            <div className="mt-2 text-sm text-slate-400">
+              Pace for this queue day
+            </div>
           </div>
         </div>
       </div>
@@ -71,7 +90,7 @@ export default function QueueCard({
           <div>
             <div className="text-sm font-semibold text-white">Upcoming tokens</div>
             <div className="mt-1 text-xs text-slate-500">
-              Next people expected after the current service
+              Next customers expected after the current service finishes
             </div>
           </div>
           <div className="rounded-full border border-white/10 bg-white/4 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-300">
@@ -97,11 +116,13 @@ export default function QueueCard({
                   </div>
                 </div>
 
-                <div className="text-left sm:text-right">
+                <div className="flex flex-col gap-2 text-left sm:items-end sm:text-right">
+                  <div className="rounded-full border border-cyan-300/18 bg-cyan-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-cyan-50">
+                    {token.status}
+                  </div>
                   <div className="text-sm font-semibold text-white">
                     {formatMinutes(token.estimatedWaitingTime)}
                   </div>
-                  <div className="text-xs capitalize text-slate-500">{token.status}</div>
                 </div>
               </div>
             ))

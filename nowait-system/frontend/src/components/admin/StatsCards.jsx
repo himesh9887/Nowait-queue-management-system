@@ -21,9 +21,13 @@ export default function StatsCards({ cards }) {
               </div>
             </div>
 
-            <div className="mt-6 flex flex-col items-start gap-2 text-xs uppercase tracking-[0.24em] sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-              <span className="text-slate-500">{card.meta}</span>
-              <span className={card.accentClassName}>{card.badge}</span>
+            <div className="mt-6 rounded-[1.2rem] border border-white/8 bg-slate-950/48 p-3">
+              <div className="text-xs uppercase tracking-[0.24em] text-slate-500">
+                {card.meta}
+              </div>
+              <div className={`mt-2 text-sm font-semibold ${card.accentClassName}`}>
+                {card.badge}
+              </div>
             </div>
           </div>
         );

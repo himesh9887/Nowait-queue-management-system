@@ -179,6 +179,30 @@ export default function AdminDashboard() {
       accentClassName: "text-amber-200",
     },
   ];
+  const heroSpotlights = [
+    {
+      label: "Current serving",
+      value: formatToken(currentServing?.tokenNumber),
+      detail: currentServing?.bookedBy || "No customer is currently being served.",
+      toneClassName: "border-emerald-300/18 bg-emerald-400/10",
+    },
+    {
+      label: "Next up",
+      value: formatToken(nextUp?.tokenNumber),
+      detail: nextUp
+        ? `${nextUp.bookedBy || "Walk-in"} is next in line.`
+        : "No waiting token is queued next right now.",
+      toneClassName: "border-cyan-300/18 bg-cyan-400/10",
+    },
+    {
+      label: "Selected day",
+      value: selectedDayInfo?.label || "Today",
+      detail: canServeSelectedDay
+        ? "Service actions are enabled for this queue."
+        : "Planning mode only until this queue day starts.",
+      toneClassName: "border-violet-300/18 bg-violet-400/10",
+    },
+  ];
   const filteredBookings = bookings.filter((booking) => {
     const matchesFilter =
       filter === "all"
@@ -274,82 +298,144 @@ export default function AdminDashboard() {
 
           <main className="min-w-0 space-y-5 sm:space-y-6">
             <header className="admin-panel admin-fade-up overflow-visible">
-              <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
-                <div className="flex items-start gap-4">
-                  <button
-                    type="button"
-                    onClick={() => setMobileSidebarOpen(true)}
-                    className="admin-chip h-11 w-11 justify-center p-0 xl:hidden"
-                    aria-label="Open navigation"
-                  >
-                    <MenuIcon />
-                  </button>
+              <div className="grid gap-6 2xl:grid-cols-[minmax(0,1fr)_340px]">
+                <div>
+                  <div className="flex items-start gap-4">
+                    <button
+                      type="button"
+                      onClick={() => setMobileSidebarOpen(true)}
+                      className="admin-chip h-11 w-11 justify-center p-0 xl:hidden"
+                      aria-label="Open navigation"
+                    >
+                      <MenuIcon />
+                    </button>
 
-                  <div>
-                    <div className="admin-kicker">Admin Dashboard</div>
-                    <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white">
-                      Welcome back, {user?.displayName || "Admin"}
-                    </h1>
-                    <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-400">
-                      Monitor live tokens, control the queue with confidence, and
-                      keep booking operations aligned across today and tomorrow.
-                    </p>
+                    <div>
+                      <div className="admin-kicker">Admin Dashboard</div>
+                      <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white">
+                        Welcome back, {user?.displayName || "Admin"}
+                      </h1>
+                      <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-400">
+                        Monitor live tokens, control the queue with confidence, and
+                        keep booking operations aligned across today and tomorrow.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 flex flex-wrap items-center gap-3">
+                    <div className="admin-chip w-full justify-center sm:w-auto">
+                      <CalendarIcon className="h-4 w-4 text-cyan-200" />
+                      {formatLongDate(new Date())}
+                    </div>
+
+                    <div className="admin-chip w-full justify-center sm:w-auto">
+                      <span
+                        className={`h-2 w-2 rounded-full ${
+                          refreshing
+                            ? "bg-amber-300"
+                            : socketConnected
+                              ? "bg-emerald-300"
+                              : "bg-slate-400"
+                        }`}
+                      />
+                      {refreshing ? "Refreshing" : socketConnected ? "Live" : "Offline"}
+                    </div>
+
+                    <div className="admin-chip w-full justify-center sm:w-auto">
+                      <QueueIcon className="h-4 w-4 text-violet-200" />
+                      {selectedDayInfo?.label || "Today"} queue
+                    </div>
+
+                    <div className="relative w-full sm:w-auto">
+                      <button
+                        type="button"
+                        onClick={() => setShowNotifications((current) => !current)}
+                        className="admin-chip relative w-full justify-between sm:w-auto sm:justify-center"
+                      >
+                        <BellIcon className="h-4 w-4 text-cyan-200" />
+                        Alerts
+                        <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-cyan-300 px-2 text-xs font-semibold text-slate-950">
+                          {notificationItems.length}
+                        </span>
+                      </button>
+
+                      {showNotifications ? (
+                        <div className="absolute left-0 right-0 top-[calc(100%+0.75rem)] z-30 w-full rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(11,17,31,0.96),rgba(8,11,21,0.98))] p-4 shadow-[0_28px_80px_rgba(2,6,23,0.5)] backdrop-blur-3xl sm:left-auto sm:right-0 sm:w-[min(24rem,80vw)]">
+                          <div className="text-xs uppercase tracking-[0.24em] text-slate-500">
+                            Notifications
+                          </div>
+                          <div className="mt-4 space-y-3">
+                            {notificationItems.map((item) => (
+                              <div
+                                key={item.title}
+                                className={`rounded-[1.35rem] border px-4 py-3 ${item.toneClassName}`}
+                              >
+                                <div className="text-sm font-semibold">{item.title}</div>
+                                <div className="mt-2 text-sm leading-6 opacity-80">
+                                  {item.detail}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                    <div className="admin-surface">
+                      <div className="text-xs uppercase tracking-[0.24em] text-slate-500">
+                        Queue pressure
+                      </div>
+                      <div className="mt-3 text-2xl font-semibold text-white">
+                        {stats.waitingTokens} waiting
+                      </div>
+                      <p className="mt-2 text-sm leading-6 text-slate-400">
+                        {stats.activeQueue} active entries are still moving through the line.
+                      </p>
+                    </div>
+
+                    <div className="admin-surface">
+                      <div className="text-xs uppercase tracking-[0.24em] text-slate-500">
+                        Last sync
+                      </div>
+                      <div className="mt-3 text-2xl font-semibold text-white">
+                        {generatedAt ? formatDateTime(generatedAt) : "--"}
+                      </div>
+                      <p className="mt-2 text-sm leading-6 text-slate-400">
+                        Queue, bookings, and alert panels are aligned to the latest refresh.
+                      </p>
+                    </div>
+
+                    <div className="admin-surface">
+                      <div className="text-xs uppercase tracking-[0.24em] text-slate-500">
+                        Queue pace
+                      </div>
+                      <div className="mt-3 text-2xl font-semibold text-white">
+                        {stats.avgServiceTime ? `${stats.avgServiceTime}m avg` : "Up next"}
+                      </div>
+                      <p className="mt-2 text-sm leading-6 text-slate-400">
+                        Keep the service rhythm visible before advancing the next token.
+                      </p>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className="admin-chip w-full justify-center sm:w-auto">
-                    <CalendarIcon className="h-4 w-4 text-cyan-200" />
-                    {formatLongDate(new Date())}
-                  </div>
-
-                  <div className="admin-chip w-full justify-center sm:w-auto">
-                    <span
-                      className={`h-2 w-2 rounded-full ${
-                        refreshing
-                          ? "bg-amber-300"
-                          : socketConnected
-                            ? "bg-emerald-300"
-                            : "bg-slate-400"
-                      }`}
-                    />
-                    {refreshing ? "Refreshing" : socketConnected ? "Live" : "Offline"}
-                  </div>
-
-                  <div className="relative w-full sm:w-auto">
-                    <button
-                      type="button"
-                      onClick={() => setShowNotifications((current) => !current)}
-                      className="admin-chip relative w-full justify-between sm:w-auto sm:justify-center"
+                <div className="grid gap-3 sm:grid-cols-3 2xl:grid-cols-1">
+                  {heroSpotlights.map((item) => (
+                    <div
+                      key={item.label}
+                      className={`rounded-[1.75rem] border p-4 shadow-[0_18px_42px_rgba(15,23,42,0.18)] ${item.toneClassName}`}
                     >
-                      <BellIcon className="h-4 w-4 text-cyan-200" />
-                      Alerts
-                      <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-cyan-300 px-2 text-xs font-semibold text-slate-950">
-                        {notificationItems.length}
-                      </span>
-                    </button>
-
-                    {showNotifications ? (
-                      <div className="absolute left-0 right-0 top-[calc(100%+0.75rem)] z-30 w-full rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(11,17,31,0.96),rgba(8,11,21,0.98))] p-4 shadow-[0_28px_80px_rgba(2,6,23,0.5)] backdrop-blur-3xl sm:left-auto sm:right-0 sm:w-[min(24rem,80vw)]">
-                        <div className="text-xs uppercase tracking-[0.24em] text-slate-500">
-                          Notifications
-                        </div>
-                        <div className="mt-4 space-y-3">
-                          {notificationItems.map((item) => (
-                            <div
-                              key={item.title}
-                              className={`rounded-[1.35rem] border px-4 py-3 ${item.toneClassName}`}
-                            >
-                              <div className="text-sm font-semibold">{item.title}</div>
-                              <div className="mt-2 text-sm leading-6 opacity-80">
-                                {item.detail}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
+                      <div className="text-xs uppercase tracking-[0.24em] text-slate-300/80">
+                        {item.label}
                       </div>
-                    ) : null}
-                  </div>
+                      <div className="mt-3 break-words text-3xl font-semibold tracking-tight text-white">
+                        {item.value}
+                      </div>
+                      <p className="mt-3 text-sm leading-6 text-slate-200/80">{item.detail}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
             </header>
@@ -611,15 +697,27 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              <div className="mt-6 grid gap-4 xl:grid-cols-[1fr_auto]">
-                <input
-                  className="soft-input"
-                  placeholder="Search by token number, user, booking label, or date"
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                />
+              <div className="mt-6 rounded-[1.75rem] border border-white/10 bg-white/4 p-4">
+                <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end">
+                  <label className="grid gap-2">
+                    <span className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
+                      Search bookings
+                    </span>
+                    <input
+                      className="soft-input"
+                      placeholder="Search by token number, user, booking label, or date"
+                      value={search}
+                      onChange={(event) => setSearch(event.target.value)}
+                    />
+                  </label>
 
-                <div className="flex flex-wrap gap-2">
+                  <div className="rounded-[1.35rem] border border-white/10 bg-slate-950/52 px-4 py-3 text-sm leading-6 text-slate-300">
+                    {filteredBookings.length} matching {filteredBookings.length === 1 ? "booking" : "bookings"} for{" "}
+                    {selectedDayInfo?.label?.toLowerCase() || "this day"}.
+                  </div>
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-2">
                   {bookingFilters.map((item) => (
                     <button
                       key={item.key}

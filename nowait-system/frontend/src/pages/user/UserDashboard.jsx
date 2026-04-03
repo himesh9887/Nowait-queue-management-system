@@ -4,7 +4,12 @@ import InvoiceCard from "../../components/user/InvoiceCard";
 import QueueCard from "../../components/user/QueueCard";
 import TokenCard from "../../components/user/TokenCard";
 import WaitingCard from "../../components/user/WaitingCard";
-import { BellIcon } from "../../components/user/UserIcons";
+import {
+  BellIcon,
+  CalendarClockIcon,
+  QueuePulseIcon,
+  TimerIcon,
+} from "../../components/user/UserIcons";
 import { useAuth } from "../../context/AuthContext";
 import { useQueue } from "../../context/QueueContext";
 import { downloadInvoicePdf } from "../../utils/invoicePdf";
@@ -211,6 +216,7 @@ export default function UserDashboard() {
           label: "Selected day",
           value:
             myToken?.bookingLabel || selectedSummary?.label || selectedDayInfo?.label || "Today",
+          detail: selectedSummary?.displayDate || "Booked queue day",
         },
         {
           label: "Queue position",
@@ -220,34 +226,67 @@ export default function UserDashboard() {
               : myToken?.queuePosition
                 ? `#${myToken.queuePosition}`
                 : "Completed",
+          detail: myToken?.status === "waiting" ? "Live place in line" : "Current booking state",
         },
         {
           label: "Now serving",
           value: formatToken(currentServing?.tokenNumber),
+          detail: "Desk activity right now",
         },
         {
           label: "Connection",
           value: socketConnected ? "Live updates on" : "Reconnecting",
+          detail: socketConnected ? "Auto-refresh active" : "Data will catch up automatically",
         },
       ]
     : [
         {
           label: "Selected day",
           value: selectedSummary?.label || selectedDayInfo?.label || "Today",
+          detail: selectedSummary?.displayDate || "Choose a day to join",
         },
         {
           label: "People waiting",
           value: `${selectedSummary?.waitingTokens ?? 0}`,
+          detail: "Current line size",
         },
         {
           label: "Average pace",
           value: stats.avgServiceTime ? formatMinutes(stats.avgServiceTime) : "--",
+          detail: "Typical service rhythm",
         },
         {
           label: "Connection",
           value: socketConnected ? "Live updates on" : "Reconnecting",
+          detail: socketConnected ? "Realtime sync active" : "Snapshot visible while syncing",
         },
       ];
+  const queuePulseStats = [
+    {
+      label: "Selected day",
+      value: selectedSummary?.label || selectedDayInfo?.label || "Today",
+      icon: CalendarClockIcon,
+      toneClassName: "border-violet-300/18 bg-violet-400/12 text-violet-100",
+    },
+    {
+      label: "Waiting now",
+      value: `${selectedSummary?.waitingTokens ?? stats.waitingTokens ?? 0}`,
+      icon: QueuePulseIcon,
+      toneClassName: "border-cyan-300/18 bg-cyan-400/12 text-cyan-100",
+    },
+    {
+      label: "Current desk",
+      value: formatToken(currentServing?.tokenNumber),
+      icon: BellIcon,
+      toneClassName: "border-emerald-300/18 bg-emerald-400/12 text-emerald-100",
+    },
+    {
+      label: "Average pace",
+      value: stats.avgServiceTime ? formatMinutes(stats.avgServiceTime) : "Up next",
+      icon: TimerIcon,
+      toneClassName: "border-amber-300/18 bg-amber-400/12 text-amber-100",
+    },
+  ];
 
   function handleDownloadInvoice() {
     if (!myToken) {
@@ -271,58 +310,87 @@ export default function UserDashboard() {
 
   return (
     <div className="space-y-6">
-      <section className="user-dashboard-card space-y-5 p-5 sm:p-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="max-w-3xl">
-            <div className="section-label">Current Status</div>
-            <h1 className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-4xl">
-              {headline}
-            </h1>
-            <p className="mt-3 text-sm leading-7 text-slate-300 sm:text-base">
-              {supportCopy}
-            </p>
-          </div>
-
-          <div className="user-dashboard-chip self-start">
-            <BellIcon className="h-4 w-4 text-sky-200" />
-            <span>{notice}</span>
-          </div>
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-3">
-          {summaryMetrics.map((item) => (
-            <article key={item.label} className="user-simple-stat">
-              <div className="user-dashboard-label">{item.label}</div>
-              <div className="mt-2 break-words text-2xl font-semibold tracking-tight text-white sm:text-[1.9rem]">
-                {item.value}
+      <section className="user-dashboard-card user-dashboard-card-strong space-y-6 p-5 sm:p-6">
+        <div className="grid gap-5 xl:grid-cols-[minmax(0,1.08fr)_340px]">
+          <div>
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div className="max-w-3xl">
+                <div className="section-label">Current Status</div>
+                <h1 className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-4xl">
+                  {headline}
+                </h1>
+                <p className="mt-3 text-sm leading-7 text-slate-300 sm:text-base">
+                  {supportCopy}
+                </p>
               </div>
-              <p className="mt-2 text-sm text-slate-400">{item.detail}</p>
-            </article>
-          ))}
-        </div>
 
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <div className="user-simple-panel">
-            <div className="card-label">Next step</div>
-            <div className="mt-2 text-lg font-semibold text-white">
-              {nextStep.title}
+              <div className="user-dashboard-chip self-start">
+                <BellIcon className="h-4 w-4 text-sky-200" />
+                <span>{notice}</span>
+              </div>
             </div>
-            <p className="mt-2 text-sm leading-6 text-slate-300">
-              {nextStep.body}
-            </p>
-          </div>
 
-          <div className="user-simple-panel">
-            <div className="card-label">Quick info</div>
-            <div className="user-key-value-list mt-4">
-              {quickFacts.map((item) => (
-                <div key={item.label} className="user-key-value-row">
-                  <span className="user-dashboard-label">{item.label}</span>
-                  <span className="user-key-value-value">{item.value}</span>
-                </div>
+            <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              {summaryMetrics.map((item) => (
+                <article key={item.label} className="user-hero-metric">
+                  <div className="user-dashboard-label">{item.label}</div>
+                  <div className="mt-3 break-words text-2xl font-semibold tracking-tight text-white sm:text-[1.9rem]">
+                    {item.value}
+                  </div>
+                  <p className="mt-2 text-sm leading-6 text-slate-400">{item.detail}</p>
+                </article>
               ))}
             </div>
           </div>
+
+          <div className="space-y-4">
+            <div className="rounded-[1.85rem] border border-white/10 bg-[linear-gradient(145deg,rgba(56,189,248,0.11),rgba(11,17,34,0.92)_45%,rgba(8,11,24,0.96))] p-5 shadow-[0_18px_42px_rgba(15,23,42,0.22)]">
+              <div className="user-dashboard-label">Next step</div>
+              <div className="mt-3 text-xl font-semibold text-white">{nextStep.title}</div>
+              <p className="mt-3 text-sm leading-7 text-slate-300">{nextStep.body}</p>
+              <div className="mt-4 rounded-[1.25rem] border border-white/10 bg-slate-950/50 px-4 py-3 text-sm text-slate-300">
+                {hasToken
+                  ? `Token ${formatToken(myToken?.tokenNumber)} is attached to this live dashboard.`
+                  : `Use the booking card below to reserve a spot for ${selectedDayInfo?.label || "today"}.`}
+              </div>
+            </div>
+
+            <div className="rounded-[1.85rem] border border-white/10 bg-slate-950/58 p-5 shadow-[0_18px_42px_rgba(15,23,42,0.22)]">
+              <div className="user-dashboard-label">Queue pulse</div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                {queuePulseStats.map((item) => {
+                  const Icon = item.icon;
+
+                  return (
+                    <div
+                      key={item.label}
+                      className="rounded-[1.35rem] border border-white/10 bg-white/4 p-4"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="user-dashboard-label">{item.label}</div>
+                        <div
+                          className={`flex h-9 w-9 items-center justify-center rounded-2xl border ${item.toneClassName}`}
+                        >
+                          <Icon className="h-4 w-4" />
+                        </div>
+                      </div>
+                      <div className="mt-3 text-lg font-semibold text-white">{item.value}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {quickFacts.map((item) => (
+            <div key={item.label} className="user-simple-stat">
+              <div className="user-dashboard-label">{item.label}</div>
+              <div className="mt-3 break-words text-lg font-semibold text-white">{item.value}</div>
+              <p className="mt-2 text-sm leading-6 text-slate-400">{item.detail}</p>
+            </div>
+          ))}
         </div>
       </section>
 
